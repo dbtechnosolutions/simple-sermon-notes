@@ -39,9 +39,10 @@
       
       <!-- Editor View -->
       <section id="editor-view" class="view active">
-        <form id="note-form" onsubmit="event.preventDefault();">
-          <!-- Metadata Section -->
-          <div class="card meta-section" style="flex-shrink: 0; margin-bottom: 0; padding-bottom: 0.5rem;">
+        <form id="note-form" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; height: 100%;">
+          <div class="scrollable-editor-area" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0;">
+            <!-- Metadata Section -->
+            <div class="card meta-section" style="flex-shrink: 0; margin-bottom: 0; padding-bottom: 0.5rem;">
             <div class="metadata-header" onclick="toggleMetadata()" style="display: flex; justify-content: center; cursor: pointer; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem;">
               <i id="metadata-chevron" class="ph-bold ph-caret-up" style="color: var(--text-secondary); transition: transform 0.2s; font-size: 1.25rem;"></i>
             </div>
@@ -94,8 +95,9 @@
                 <i class="ph-bold ph-text-underline"></i>
               </button>
             </div>
-            <div id="note-content" class="free-form-textarea rich-text-editor" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+            <div id="note-content" class="free-form-textarea rich-text-editor" contenteditable="true" data-placeholder="Start typing your notes here..." style="min-height: 200px;"></div>
           </div>
+          </div> <!-- End scrollable-editor-area -->
 
           <div class="form-actions" style="margin-top: 1rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem;">
             <button type="button" class="btn-primary full-width" onclick="finalizeNote()">
