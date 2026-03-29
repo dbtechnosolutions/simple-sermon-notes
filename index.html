@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sermon Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Progressive Web App Settings -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0F1218">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sermon Notes">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+</head>
+<body>
+  <div class="app-container">
+    <header class="top-bar">
+      <div class="top-bar-left" style="display: flex; align-items: center; gap: 0.5rem;">
+        <button class="btn-icon" id="btn-back-sermons" onclick="switchView('list')" title="Back to Sermons" style="display: none;">
+          <i class="ph-bold ph-arrow-left"></i>
+        </button>
+        <h1 id="app-title">New Note</h1>
+      </div>
+      <div class="top-actions">
+        <span class="save-indicator" id="save-indicator">Saved</span>
+        <button class="btn-icon" id="btn-new-note" onclick="createNewNote()" title="Start New Note">
+          <i class="ph-bold ph-plus"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="content-area">
+      
+      <!-- Editor View -->
+      <section id="editor-view" class="view active">
+        <form id="note-form" onsubmit="event.preventDefault();">
+          <!-- Metadata Section -->
+          <div class="card meta-section" style="flex-shrink: 0; margin-bottom: 0; padding-bottom: 0.5rem;">
+            <div class="metadata-header" onclick="toggleMetadata()" style="display: flex; justify-content: center; cursor: pointer; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem;">
+              <i id="metadata-chevron" class="ph-bold ph-caret-up" style="color: var(--text-secondary); transition: transform 0.2s; font-size: 1.25rem;"></i>
+            </div>
+            <div id="metadata-body" class="metadata-body">
+              <input type="text" id="note-title" class="input-title" placeholder="Sermon Title" autocomplete="off">
+              <div class="input-row" style="margin-top: 0.5rem;">
+                <div class="input-group">
+                  <i class="ph ph-user"></i>
+                  <input type="text" id="note-speaker" placeholder="Speaker" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <i class="ph ph-calendar-blank"></i>
+                  <input type="date" id="note-date">
+                </div>
+              </div>
+              <div class="input-group" style="margin-top: 0.5rem;">
+                <i class="ph ph-book-open-text"></i>
+                <input type="text" id="note-main-scripture" placeholder="Main Scripture (e.g., John 3:16)" autocomplete="off">
+              </div>
+              
+              <div id="scripture-preview" class="scripture-preview hidden">
+                <div class="scripture-text" id="scripture-preview-text"></div>
+              <div class="scripture-meta" id="scripture-preview-meta"></div>
+            </div>
+
+            <div class="series-container" id="series-container">
+              <button type="button" class="btn-text-muted" onclick="toggleSeriesInput()" id="btn-add-series">
+                <i class="ph ph-list-plus"></i> Add to Series
+              </button>
+              <div class="series-input-wrapper hidden" id="series-input-wrapper">
+                <div class="input-group">
+                  <i class="ph ph-books"></i>
+                  <input type="text" id="note-series" placeholder="Series Title" autocomplete="off">
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <!-- Note Content -->
+          <div class="card content-section">
+            <div id="editor-toolbar" class="editor-toolbar">
+              <button class="toolbar-btn" type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                <i class="ph-bold ph-text-b"></i>
+              </button>
+              <button class="toolbar-btn" type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                <i class="ph-bold ph-text-italic"></i>
+              </button>
+              <button class="toolbar-btn" type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)">
+                <i class="ph-bold ph-text-underline"></i>
+              </button>
+            </div>
+            <div id="note-content" class="free-form-textarea rich-text-editor" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 1rem; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem;">
+            <button type="button" class="btn-primary full-width" onclick="finalizeNote()">
+              <i class="ph ph-check-circle"></i> Finalize Note
+            </button>
+            <button type="button" class="btn-danger full-width" onclick="deleteCurrentNote()">
+              <i class="ph ph-trash"></i> Delete Note
+            </button>
+          </div>
+
+        </form>
+        <!-- Spacer for bottom padding due to nav -->
+        <div class="bottom-spacer"></div>
+      </section>
+
+      <!-- List View -->
+      <section id="list-view" class="view hidden">
+        <div class="list-controls">
+          <div class="search-box">
+            <i class="ph ph-magnifying-glass"></i>
+            <input type="text" id="search-input" placeholder="Search notes..." autocomplete="off">
+          </div>
+          <div class="sort-controls">
+            <select id="sort-select" onchange="changeSortMode(event)">
+              <option value="chronological">Date (Newest)</option>
+              <option value="series">By Series</option>
+            </select>
+          </div>
+        </div>
+        <div id="notes-container" class="notes-grid">
+          <!-- Note cards go here -->
+        </div>
+        
+        <div id="empty-state" class="empty-state hidden">
+          <i class="ph-fill ph-notebook"></i>
+          <p>No notes yet.</p>
+          <button class="btn-primary" onclick="createNewNote()">Start Writing</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => console.log('ServiceWorker registration successful'))
+          .catch(err => console.error('ServiceWorker registration failed: ', err));
+      });
+    }
+  </script>
+</body>
+</html>
