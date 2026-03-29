@@ -19,7 +19,9 @@ const UI = {
   },
   topBar: {
     backBtn: document.getElementById('btn-back-sermons'),
-    newNoteBtn: document.getElementById('btn-new-note')
+    newNoteBtn: document.getElementById('btn-new-note'),
+    deleteBtn: document.getElementById('btn-delete-note'),
+    finalizeBtn: document.getElementById('btn-finalize-note')
   },
   form: {
     title: document.getElementById('note-title'),
@@ -166,11 +168,21 @@ function switchView(viewName) {
     UI.appTitle.textContent = 'Sermons';
     UI.topBar.backBtn.style.display = 'none';
     UI.topBar.newNoteBtn.style.display = 'block';
+    
+    // Hide editor buttons
+    if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'none';
+    if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'none';
+    
     renderNotesList();
   } else if (viewName === 'editor') {
     UI.appTitle.textContent = state.currentNoteId ? 'Edit Note' : 'New Note';
     UI.topBar.backBtn.style.display = 'block';
     UI.topBar.newNoteBtn.style.display = 'none';
+    
+    // Show editor buttons
+    if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'block';
+    if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'block';
+    
     if (typeof updateDynamicAutocompletes === 'function') updateDynamicAutocompletes();
   }
 }
