@@ -15,13 +15,16 @@ let state = {
 const UI = {
   views: {
     editor: document.getElementById('editor-view'),
-    list: document.getElementById('list-view')
+    list: document.getElementById('list-view'),
+    auth: document.getElementById('auth-view')
   },
+  header: document.querySelector('.top-bar'),
   topBar: {
     backBtn: document.getElementById('btn-back-sermons'),
     newNoteBtn: document.getElementById('btn-new-note'),
     deleteBtn: document.getElementById('btn-delete-note'),
-    finalizeBtn: document.getElementById('btn-finalize-note')
+    finalizeBtn: document.getElementById('btn-finalize-note'),
+    logoutBtn: document.getElementById('btn-logout')
   },
   form: {
     title: document.getElementById('note-title'),
@@ -164,10 +167,14 @@ function switchView(viewName) {
   // Small delay to allow display:flex to apply before setting opacity
   setTimeout(() => activeEl.classList.add('active'), 10);
   
-  if (viewName === 'list') {
+  if (viewName === 'auth') {
+    if (UI.header) UI.header.style.display = 'none';
+  } else if (viewName === 'list') {
+    if (UI.header) UI.header.style.display = 'flex';
     UI.appTitle.textContent = 'Sermons';
     UI.topBar.backBtn.style.display = 'none';
     UI.topBar.newNoteBtn.style.display = 'block';
+    if (UI.topBar.logoutBtn) UI.topBar.logoutBtn.style.display = 'block';
     
     // Hide editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'none';
@@ -175,9 +182,11 @@ function switchView(viewName) {
     
     renderNotesList();
   } else if (viewName === 'editor') {
+    if (UI.header) UI.header.style.display = 'flex';
     UI.appTitle.textContent = state.currentNoteId ? 'Edit Note' : 'New Note';
     UI.topBar.backBtn.style.display = 'block';
     UI.topBar.newNoteBtn.style.display = 'none';
+    if (UI.topBar.logoutBtn) UI.topBar.logoutBtn.style.display = 'none';
     
     // Show editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'block';
@@ -561,9 +570,8 @@ function updateDynamicAutocompletes() {
 
 // --- Init ---
 async function init() {
-  if (window.InitializeStorageBackend) {
-    await window.InitializeStorageBackend();
-  }
+  // We purposely DO NOT hit InitializeStorageBackend() here anymore.
+  // The Firebase Auth 'onAuthStateChanged' listener inside storage.js completely takes over the native boot sequence!
 
   // Set default date
   UI.form.date.value = new Date().toISOString().split('T')[0];
@@ -598,9 +606,55 @@ async function init() {
   setupBibleAutocomplete();
   updateDynamicAutocompletes();
   
-  // Start on editor
-  switchView('editor');
+  // Notice we DO NOT manually call switchView('editor') anymore. Auth listener handles the very first routing!
 }
 
-// Ensure DOM is ready (simplistic approach since it's bottom loaded)
+// --- Authentication Handlers ---
+
+window.signInAction = () => {
+  if (window.SignInWithGoogle) {
+    window.SignInWithGoogle().catch(err => {
+      console.error("Sign In Blocked", err);
+      alert("Sign In Failed: Ensure Google Sign-In is enabled in Firebase Console.");
+    });
+  }
+};
+
+window.signOutAction = () => {
+  if (window.SignOutFromGoogle) {
+    window.SignOutFromGoogle().then(() => {
+      Storage.clearCache();
+      switchView('auth');
+    });
+  }
+};
+
+// Global Boot Sequence Gateway
+firebase.auth().onAuthStateChanged(async (user) => {
+  if (user) {
+    // 1. Point Storage at the validated user
+    Storage.setUserUID(user.uid);
+    
+    // 2. Perform one-time migration from hardware ID
+    if (Storage.migrateDeviceDataToGoogle) {
+      await Storage.migrateDeviceDataToGoogle(user.uid);
+    }
+    
+    // 3. Warm up the database
+    if (window.InitializeStorageBackend) {
+      await window.InitializeStorageBackend();
+    }
+    
+    // 4. Show the list
+    switchView('list');
+  } else {
+    // No user, force login gate
+    Storage.setUserUID(null);
+    Storage.clearCache();
+    switchView('auth');
+  }
+});
+
+// Ensure initial UI mapping is complete before listener might fire (redundant but safe)
 init();
+

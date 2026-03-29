@@ -27,25 +27,22 @@ db.enablePersistence().catch((err) => {
   }
 });
 
-// Installation ID acts as a pseudo user account
-let installationId = localStorage.getItem('sermon_install_id');
-if (!installationId) {
-  installationId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-  localStorage.setItem('sermon_install_id', installationId);
-}
-console.log("Device Installation ID Map:", installationId);
+// Initialize Authentication Services
+const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-// Internal Cache to keep UI fast
+// System variables
+let currentUserUID = null;
 let localNotesCache = [];
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
-// Fetch from cloud asynchronously
+// Fetch from cloud asynchronously for authenticated user
 async function fetchNotesFromDb() {
   try {
-    const colRef = db.collection(`users/${installationId}/sermons`);
+    const colRef = db.collection(`users/${currentUserUID}/sermons`);
     const snapshot = await colRef.get();
     const notes = [];
     snapshot.forEach(docSnap => {
@@ -61,34 +58,44 @@ async function fetchNotesFromDb() {
   }
 }
 
-// Migrate old data if necessary (one-time push)
-async function migrateLegacyData() {
-  const legacyData = localStorage.getItem('sermon_notes_data');
-  if (legacyData) {
-    try {
-      const parsed = JSON.parse(legacyData);
-      if (parsed && parsed.length > 0) {
-        console.log("Migrating legacy data to Firebase...");
-        for (const note of parsed) {
-          await saveNote(note); // Securely pushes them up to the cloud!
-        }
-      }
-      localStorage.removeItem('sermon_notes_data');
-      console.log("Legacy data migration complete.");
-    } catch(e) {
-      console.error("Error migrating legacy data", e);
+// Seamlessly copy local hardware notes fully to the Google account natively
+async function migrateDeviceDataToGoogle(uid) {
+  const legacyId = localStorage.getItem('sermon_install_id');
+  if (!legacyId) return; // No legacy device ID to migrate
+  
+  const hasMigrated = localStorage.getItem('sermon_notes_migrated_to_auth');
+  if (hasMigrated === 'true') return; // Only execute migration once specifically for this device
+  
+  console.log("Device database found. Migrating legacy hardware notes into Google account...");
+  try {
+    const colRef = db.collection(`users/${legacyId}/sermons`);
+    const snapshot = await colRef.get();
+    
+    if (!snapshot.empty) {
+      const batch = db.batch();
+      snapshot.forEach(docSnap => {
+        const newDocRef = db.collection(`users/${uid}/sermons`).doc(docSnap.id);
+        batch.set(newDocRef, docSnap.data());
+      });
+      await batch.commit();
+      console.log(`Successfully beamed ${snapshot.size} device notes safely into the cloud!`);
+    } else {
+      console.log("No legacy hardware notes existed.");
     }
+    
+    // Tag this hardware browser so it securely never attempts migration again
+    localStorage.setItem('sermon_notes_migrated_to_auth', 'true');
+  } catch(e) {
+    console.error("Critical error forcefully copying device notes to cloud:", e);
   }
 }
 
 // Automatically bind to the loading flow
 window.InitializeStorageBackend = async function() {
-  await migrateLegacyData();
   await fetchNotesFromDb();
 }
 
 function getNotes() {
-  // Always returns cached version instantly for UI responsiveness
   return localNotesCache;
 }
 
@@ -110,7 +117,7 @@ async function saveNote(note) {
 
   // Push to Firebase async (in background)
   try {
-    const docRef = db.collection(`users/${installationId}/sermons`).doc(note.id);
+    const docRef = db.collection(`users/${currentUserUID}/sermons`).doc(note.id);
     await docRef.set(note);
   } catch(e) {
     console.error("Failed to sync note to cloud", e);
@@ -121,17 +128,26 @@ async function saveNote(note) {
 }
 
 async function deleteNote(id) {
-  // Update local cache
   localNotesCache = localNotesCache.filter(n => n.id !== id);
   
-  // Delete from cloud background
   try {
-    const docRef = db.collection(`users/${installationId}/sermons`).doc(id);
+    const docRef = db.collection(`users/${currentUserUID}/sermons`).doc(id);
     await docRef.delete();
   } catch(e) {
     console.error("Failed to delete from cloud", e);
   }
 }
+
+// --- Auth Helpers (Exposed) ---
+
+window.SignInWithGoogle = () => {
+  return auth.signInWithPopup(googleProvider);
+};
+
+window.SignOutFromGoogle = () => {
+  return auth.signOut();
+};
+
 
 // Expose synchronously mapping functions for the UI layer
 window.Storage = {
@@ -139,5 +155,8 @@ window.Storage = {
   getNoteById,
   saveNote,
   deleteNote,
-  generateId
+  generateId,
+  migrateDeviceDataToGoogle,
+  setUserUID: (uid) => { currentUserUID = uid; },
+  clearCache: () => { localNotesCache = []; }
 };

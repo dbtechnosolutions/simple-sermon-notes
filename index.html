@@ -40,13 +40,26 @@
         <button class="btn-icon" id="btn-new-note" onclick="createNewNote()" title="Start New Note">
           <i class="ph-bold ph-plus"></i>
         </button>
+        <button class="btn-icon" id="btn-logout" onclick="window.signOutAction()" title="Sign Out">
+          <i class="ph-bold ph-sign-out"></i>
+        </button>
       </div>
     </header>
 
     <main class="content-area">
       
+      <!-- Auth View -->
+      <section id="auth-view" class="view" style="justify-content: center; align-items: center; text-align: center;">
+        <i class="ph-fill ph-books" style="font-size: 5rem; color: var(--accent-primary); margin-bottom: 1.5rem;"></i>
+        <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Sermon Notes</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem; max-width: 80%;">Securely sync your library exactly across your devices.</p>
+        <button class="btn-primary" onclick="window.signInAction()" style="padding: 1rem 2rem; display: flex; align-items: center; gap: 0.75rem; border-radius: 999px;">
+          <i class="ph-fill ph-google-logo" style="font-size: 1.25rem;"></i> Sign in with Google
+        </button>
+      </section>
+
       <!-- Editor View -->
-      <section id="editor-view" class="view active">
+      <section id="editor-view" class="view">
         <form id="note-form" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; height: 100%;">
           <!-- Metadata Section -->
             <div class="card meta-section" style="flex-shrink: 0; margin-bottom: 0; padding-bottom: 0.5rem;">
@@ -139,6 +152,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 
