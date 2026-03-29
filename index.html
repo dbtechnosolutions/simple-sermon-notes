@@ -46,8 +46,7 @@
       <!-- Editor View -->
       <section id="editor-view" class="view active">
         <form id="note-form" onsubmit="event.preventDefault();" style="display: flex; flex-direction: column; height: 100%;">
-          <div class="scrollable-editor-area" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0;">
-            <!-- Metadata Section -->
+          <!-- Metadata Section -->
             <div class="card meta-section" style="flex-shrink: 0; margin-bottom: 0; padding-bottom: 0.5rem;">
             <div class="metadata-header" onclick="toggleMetadata()" style="display: flex; justify-content: center; cursor: pointer; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 0.5rem;">
               <i id="metadata-chevron" class="ph-bold ph-caret-up" style="color: var(--text-secondary); transition: transform 0.2s; font-size: 1.25rem;"></i>
@@ -89,7 +88,7 @@
           </div>
 
           <!-- Note Content -->
-          <div class="card content-section" style="flex: 1; display: flex; flex-direction: column; overflow: visible; min-height: 300px;">
+          <div class="card content-section">
             <div id="editor-toolbar" class="editor-toolbar">
               <button class="toolbar-btn" type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
                 <i class="ph-bold ph-text-b"></i>
@@ -101,9 +100,8 @@
                 <i class="ph-bold ph-text-underline"></i>
               </button>
             </div>
-            <div id="note-content" class="free-form-textarea rich-text-editor" contenteditable="true" data-placeholder="Start typing your notes here..." style="min-height: 300px; overflow-y: visible;"></div>
+            <div id="note-content" class="free-form-textarea rich-text-editor" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
           </div>
-          </div> <!-- End scrollable-editor-area -->
         </form>
         <!-- Spacer for bottom padding due to nav -->
         <div class="bottom-spacer"></div>
