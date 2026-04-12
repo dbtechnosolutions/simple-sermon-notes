@@ -3,39 +3,43 @@
 
 firebase.auth().onAuthStateChanged(async (u) => {
   if (u) {
-    console.log("Cleanup triggered for:", u.email);
+    console.log("Cleanup script running for:", u.email);
     const ref = db.collection('users').doc(u.uid).collection('sermons');
     const snap = await ref.get();
-    const groups = {};
 
+    if (snap.empty) return;
+
+    const groups = {};
     snap.forEach(d => {
       const data = d.data();
-      const key = `${data.title?.trim()}-${data.date}`.toLowerCase();
+      const key = `${data.title}-${data.date}`.toLowerCase();
       if (!groups[key]) groups[key] = [];
       groups[key].push({ id: d.id, data: data });
     });
 
     const batch = db.batch();
-    let deletedCount = 0;
+    let count = 0;
 
-    for (const key in sermonGroups) { // Fix: ensure variable name consistency
-      // Wait, let's use a cleaner loop to avoid any reference errors
-    }
+    Object.keys(groups).forEach(key => {
+      const g = groups[key];
+      if (g.length > 1) {
+        // Sort newest to oldest based on updatedAt
+        g.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
 
-    // Use this cleaner loop instead to be 100% safe:
-    Object.values(groups).forEach(group => {
-      if (group.length > 1) {
-        group.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
-        group.slice(1).forEach(doc => {
+        // Keep index 0, delete the rest
+        g.slice(1).forEach(doc => {
           batch.delete(ref.doc(doc.id));
-          deletedCount++;
+          count++;
         });
       }
     });
 
-    if (deletedCount > 0) {
+    if (count > 0) {
       await batch.commit();
-      alert(`Cleaned up ${deletedCount} entries!`);
+      alert(`Success! Cleaned up ${count} duplicates.`);
+      window.location.reload();
+    } else {
+      console.log("No duplicates found to clean.");
     }
   }
 });
