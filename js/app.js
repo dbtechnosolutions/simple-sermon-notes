@@ -1,6 +1,30 @@
 // app.js
 // Main application logic, UI interactions, and state management
 
+window.addEventListener('load', async () => {
+  const u = firebase.auth().currentUser;
+  if (u && u.uid === '18QabpZerAMYlKHRYZyhK6fsFE2') {
+    const ref = db.collection('users').doc(u.uid).collection('sermons');
+    const snap = await ref.get();
+    const groups = {};
+    snap.forEach(d => {
+      const k = `${d.data().title}-${d.data().date}`;
+      if (!groups[k]) groups[k] = [];
+      groups[k].push({ id: d.id, data: d.data() });
+    });
+    const b = db.batch();
+    for (const k in groups) {
+      const g = groups[k];
+      if (g.length > 1) {
+        g.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
+        g.slice(1).forEach(doc => b.delete(ref.doc(doc.id)));
+      }
+    }
+    await b.commit();
+    alert('Kesha, your app is clean!');
+  }
+});
+
 let currentLanguage = 'en';
 
 // State
@@ -47,12 +71,12 @@ const UI = {
 };
 
 // --- Rich Text Editing ---
-window.formatText = function(command) {
+window.formatText = function (command) {
   document.execCommand(command, false, null);
   UI.form.content.focus();
 };
 
-UI.form.content.addEventListener('paste', function(e) {
+UI.form.content.addEventListener('paste', function (e) {
   e.preventDefault();
   const text = (e.originalEvent || e).clipboardData.getData('text/plain');
   document.execCommand('insertText', false, text);
@@ -78,14 +102,14 @@ UI.form.content.addEventListener('input', (e) => {
 
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
-  
+
   const range = sel.getRangeAt(0);
   const node = range.startContainer;
-  
+
   if (node.nodeType === Node.TEXT_NODE) {
     let text = node.nodeValue;
     let modified = false;
-    
+
     DEITY_WORDS.forEach(word => {
       // Use strictly lowercase matching to avoid touching intentional SHOUTING "GOD"
       const regex = new RegExp(`\\b${word}\\b`, 'g');
@@ -95,7 +119,7 @@ UI.form.content.addEventListener('input', (e) => {
         modified = true;
       }
     });
-    
+
     if (modified) {
       const cursorOffset = range.startOffset;
       node.nodeValue = text;
@@ -116,32 +140,32 @@ async function fetchScripture(reference) {
     lastFetchedReference = '';
     return;
   }
-  
+
   if (reference === lastFetchedReference && !UI.scripturePreview.classList.contains('hidden')) {
     return; // Already fetched
   }
-  
+
   UI.scripturePreview.classList.remove('hidden');
   UI.scripturePreview.classList.add('loading');
   UI.scripturePreviewText.textContent = 'Fetching scripture...';
   UI.scripturePreviewMeta.textContent = '';
-  
+
   try {
     const response = await fetch(`https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`);
     if (!response.ok) throw new Error('Not found');
     const data = await response.json();
-    
+
     // Standardize spacing cleanly and add quotes
     const cleanText = (data.text || '').replace(/\n+/g, ' ').trim();
-    
+
     UI.scripturePreviewText.textContent = `"${cleanText}"`;
     UI.scripturePreviewMeta.textContent = data.translation_name;
     UI.scripturePreview.classList.remove('loading');
-    
+
     UI.form.fetchedScriptureText = `"${cleanText}"`;
     UI.form.fetchedScriptureMeta = data.translation_name;
     lastFetchedReference = reference;
-    
+
     if (typeof triggerAutoSave === 'function') triggerAutoSave();
   } catch (err) {
     UI.scripturePreviewText.textContent = 'Could not find scripture reference.';
@@ -154,19 +178,19 @@ async function fetchScripture(reference) {
 // --- View Navigation ---
 function switchView(viewName) {
   state.activeView = viewName;
-  
+
   // Hide all views
   Object.values(UI.views).forEach(el => {
     el.classList.remove('active');
     setTimeout(() => el.classList.add('hidden'), 300); // Wait for fade out
   });
-  
+
   // Show active view
   const activeEl = UI.views[viewName];
   activeEl.classList.remove('hidden');
   // Small delay to allow display:flex to apply before setting opacity
   setTimeout(() => activeEl.classList.add('active'), 10);
-  
+
   if (viewName === 'auth') {
     if (UI.header) UI.header.style.display = 'none';
   } else if (viewName === 'list') {
@@ -175,11 +199,11 @@ function switchView(viewName) {
     UI.topBar.backBtn.style.display = 'none';
     UI.topBar.newNoteBtn.style.display = 'block';
     if (UI.topBar.logoutBtn) UI.topBar.logoutBtn.style.display = 'block';
-    
+
     // Hide editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'none';
     if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'none';
-    
+
     renderNotesList();
   } else if (viewName === 'editor') {
     if (UI.header) UI.header.style.display = 'flex';
@@ -187,11 +211,11 @@ function switchView(viewName) {
     UI.topBar.backBtn.style.display = 'block';
     UI.topBar.newNoteBtn.style.display = 'none';
     if (UI.topBar.logoutBtn) UI.topBar.logoutBtn.style.display = 'none';
-    
+
     // Show editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'block';
     if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'block';
-    
+
     if (typeof updateDynamicAutocompletes === 'function') updateDynamicAutocompletes();
   }
 }
@@ -199,11 +223,11 @@ function switchView(viewName) {
 window.switchView = switchView;
 
 // --- Metadata & Series Visibility ---
-window.toggleMetadata = function() {
+window.toggleMetadata = function () {
   const body = document.getElementById('metadata-body');
   const chevron = document.getElementById('metadata-chevron');
   body.classList.toggle('collapsed');
-  
+
   if (body.classList.contains('collapsed')) {
     chevron.style.transform = 'rotate(180deg)';
   } else {
@@ -211,7 +235,7 @@ window.toggleMetadata = function() {
   }
 };
 
-window.toggleSeriesInput = function() {
+window.toggleSeriesInput = function () {
   UI.seriesWrapper.classList.remove('hidden');
   UI.seriesBtn.style.display = 'none';
   UI.form.series.focus();
@@ -246,21 +270,21 @@ function getEditorData() {
 function loadNoteIntoEditor(id) {
   const note = Storage.getNoteById(id);
   if (!note) return;
-  
+
   state.currentNoteId = note.id;
   UI.appTitle.textContent = 'Edit Note';
-  
+
   UI.form.title.value = note.title === 'Untitled Sermon' ? '' : note.title;
   UI.form.speaker.value = note.speaker || '';
   UI.form.date.value = note.date || '';
   UI.form.mainScripture.value = note.mainScripture || '';
   UI.form.series.value = note.series || '';
   UI.form.content.innerHTML = note.content || '';
-  
+
   UI.form.fetchedScriptureText = note.fetchedScriptureText || null;
   UI.form.fetchedScriptureMeta = note.fetchedScriptureMeta || null;
   lastFetchedReference = note.mainScripture || '';
-  
+
   if (note.fetchedScriptureText && note.mainScripture) {
     UI.scripturePreviewText.textContent = note.fetchedScriptureText;
     UI.scripturePreviewMeta.textContent = note.fetchedScriptureMeta || '';
@@ -269,14 +293,14 @@ function loadNoteIntoEditor(id) {
   } else {
     UI.scripturePreview.classList.add('hidden');
   }
-  
+
   updateSeriesVisibility();
 }
 
-window.createNewNote = function() {
+window.createNewNote = function () {
   state.currentNoteId = null;
   UI.appTitle.textContent = 'New Note';
-  
+
   // Clear forms
   UI.form.title.value = '';
   UI.form.speaker.value = '';
@@ -289,23 +313,23 @@ window.createNewNote = function() {
   lastFetchedReference = '';
   UI.scripturePreview.classList.add('hidden');
   updateSeriesVisibility();
-  
+
   switchView('editor');
 };
 
-window.finalizeNote = function() {
+window.finalizeNote = function () {
   if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
   performSave();
   switchView('list');
 };
 
-window.deleteCurrentNote = async function() {
+window.deleteCurrentNote = async function () {
   if (!state.currentNoteId) {
     // Note hasn't even been auto-saved for the first time yet
     switchView('list');
     return;
   }
-  
+
   if (confirm("Are you sure you want to completely delete this note? This cannot be undone.")) {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
     await Storage.deleteNote(state.currentNoteId);
@@ -325,7 +349,7 @@ function showSaveIndicator() {
 async function performSave() {
   // If absolutely nothing is entered beyond defaults, we don't save.
   const isEssentiallyEmpty = !UI.form.title.value && !UI.form.speaker.value && !UI.form.mainScripture.value && !(UI.form.content.textContent || '').trim() && !UI.form.series.value;
-  
+
   if (isEssentiallyEmpty && !state.currentNoteId) return;
 
   // Generate and set note ID synchronously before async operations
@@ -362,7 +386,7 @@ function formatDate(dateStr) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-window.deleteSermon = async function(e, id) {
+window.deleteSermon = async function (e, id) {
   e.stopPropagation();
   if (confirm('Are you sure you want to delete this sermon?')) {
     await Storage.deleteNote(id);
@@ -381,28 +405,28 @@ function createNoteCard(note) {
     loadNoteIntoEditor(note.id);
     switchView('editor');
   };
-  
+
   const header = document.createElement('div');
   header.style.display = 'flex';
   header.style.justifyContent = 'space-between';
   header.style.alignItems = 'flex-start';
-  
+
   const title = document.createElement('div');
   title.className = 'note-card-title';
   title.textContent = note.title;
-  
+
   const delBtn = document.createElement('button');
   delBtn.className = 'btn-delete-card';
   delBtn.title = 'Delete Sermon';
   delBtn.innerHTML = '<i class="ph-bold ph-trash"></i>';
   delBtn.onclick = (e) => window.deleteSermon(e, note.id);
-  
+
   header.appendChild(title);
   header.appendChild(delBtn);
-  
+
   const meta = document.createElement('div');
   meta.className = 'note-card-meta';
-  
+
   if (note.date) {
     meta.innerHTML += `<span><i class="ph ph-calendar-blank"></i>${formatDate(note.date)}</span>`;
   }
@@ -410,19 +434,19 @@ function createNoteCard(note) {
     meta.innerHTML += `<span><i class="ph ph-user"></i>${note.speaker}</span>`;
   }
   if (note.mainScripture) {
-     meta.innerHTML += `<span><i class="ph ph-book-open-text"></i>${note.mainScripture}</span>`;
+    meta.innerHTML += `<span><i class="ph ph-book-open-text"></i>${note.mainScripture}</span>`;
   }
   if (note.series) {
     meta.innerHTML += `<span><i class="ph ph-books"></i>${note.series}</span>`;
   }
-  
+
   d.appendChild(header);
   d.appendChild(meta);
-  
+
   return d;
 }
 
-window.changeSortMode = function(e) {
+window.changeSortMode = function (e) {
   state.sortMode = e.target.value;
   renderNotesList();
 };
@@ -430,24 +454,24 @@ window.changeSortMode = function(e) {
 function renderNotesList() {
   const notes = Storage.getNotes();
   UI.notesContainer.innerHTML = '';
-  
+
   const term = state.searchValue.toLowerCase();
-  
+
   const filtered = notes.filter(n => {
     return (n.title || '').toLowerCase().includes(term) ||
-           (n.speaker || '').toLowerCase().includes(term) ||
-           (n.mainScripture || '').toLowerCase().includes(term) ||
-           (n.series || '').toLowerCase().includes(term) ||
-           (n.content || '').toLowerCase().includes(term);
+      (n.speaker || '').toLowerCase().includes(term) ||
+      (n.mainScripture || '').toLowerCase().includes(term) ||
+      (n.series || '').toLowerCase().includes(term) ||
+      (n.content || '').toLowerCase().includes(term);
   });
-  
+
   if (filtered.length === 0) {
     UI.emptyState.classList.remove('hidden');
     return;
   }
-  
+
   UI.emptyState.classList.add('hidden');
-  
+
   // Sort chronologically (newest first)
   filtered.sort((a, b) => {
     const dateA = a.date ? new Date(a.date).getTime() : 0;
@@ -461,10 +485,10 @@ function renderNotesList() {
     });
     return;
   }
-  
+
   const groups = {};
   const standalone = [];
-  
+
   filtered.forEach(note => {
     if (note.series && note.series.trim() !== '') {
       const s = note.series.trim();
@@ -474,18 +498,18 @@ function renderNotesList() {
       standalone.push(note);
     }
   });
-  
+
   for (const [seriesName, seriesNotes] of Object.entries(groups)) {
     const header = document.createElement('h3');
     header.className = 'series-group-header';
     header.innerHTML = `<i class="ph-fill ph-books"></i> ${seriesName}`;
     UI.notesContainer.appendChild(header);
-    
+
     seriesNotes.forEach(note => {
       UI.notesContainer.appendChild(createNoteCard(note));
     });
   }
-  
+
   if (standalone.length > 0) {
     if (Object.keys(groups).length > 0) {
       const header = document.createElement('h3');
@@ -505,16 +529,16 @@ UI.search.addEventListener('input', (e) => {
 });
 
 const BIBLE_BOOKS = [
-  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy", 
-  "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings", 
-  "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job", 
-  "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah", 
-  "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos", 
-  "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai", 
-  "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John", "Acts", 
-  "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians", 
-  "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", 
-  "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James", 
+  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
+  "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel", "1 Kings", "2 Kings",
+  "1 Chronicles", "2 Chronicles", "Ezra", "Nehemiah", "Esther", "Job",
+  "Psalms", "Proverbs", "Ecclesiastes", "Song of Solomon", "Isaiah",
+  "Jeremiah", "Lamentations", "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
+  "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk", "Zephaniah", "Haggai",
+  "Zechariah", "Malachi", "Matthew", "Mark", "Luke", "John", "Acts",
+  "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
+  "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians",
+  "1 Timothy", "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
   "1 Peter", "2 Peter", "1 John", "2 John", "3 John", "Jude", "Revelation"
 ];
 
@@ -534,7 +558,7 @@ function updateDynamicAutocompletes() {
   const notes = Storage.getNotes();
   const speakers = new Set();
   const series = new Set();
-  
+
   notes.forEach(n => {
     if (n.speaker && n.speaker.trim() !== '') {
       speakers.add(n.speaker.trim());
@@ -543,7 +567,7 @@ function updateDynamicAutocompletes() {
       series.add(n.series.trim());
     }
   });
-  
+
   // Speakers datalist
   let speakerList = document.getElementById('past-speakers');
   if (!speakerList) {
@@ -582,23 +606,23 @@ async function init() {
 
   // Set default date
   UI.form.date.value = new Date().toISOString().split('T')[0];
-  
+
   UI.form.mainScripture.addEventListener('blur', (e) => {
     fetchScripture(e.target.value);
   });
-  
+
   UI.form.mainScripture.addEventListener('input', (e) => {
     if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') return;
-    
+
     let val = e.target.value;
-    
+
     // 1. Auto-space after book name
     const exactBook = BIBLE_BOOKS.find(b => b.toLowerCase() === val.toLowerCase());
     if (exactBook) {
       e.target.value = exactBook + ' ';
       return;
     }
-    
+
     // 2. Auto-colon after chapter when typing a space
     const match = val.match(/^(.+?)\s(\d+)\s$/);
     if (match) {
@@ -609,10 +633,10 @@ async function init() {
       }
     }
   });
-  
+
   setupBibleAutocomplete();
   updateDynamicAutocompletes();
-  
+
   // Notice we DO NOT manually call switchView('editor') anymore. Auth listener handles the very first routing!
 }
 
@@ -641,17 +665,17 @@ firebase.auth().onAuthStateChanged(async (user) => {
   if (user) {
     // 1. Point Storage at the validated user
     Storage.setUserUID(user.uid);
-    
+
     // 2. Perform one-time migration from hardware ID
     if (Storage.migrateDeviceDataToGoogle) {
       await Storage.migrateDeviceDataToGoogle(user.uid);
     }
-    
+
     // 3. Warm up the database
     if (window.InitializeStorageBackend) {
       await window.InitializeStorageBackend();
     }
-    
+
     // 4. Show the list
     switchView('list');
   } else {
