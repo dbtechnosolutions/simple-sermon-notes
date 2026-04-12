@@ -2,44 +2,39 @@
 // Main application logic, UI interactions, and state management
 
 firebase.auth().onAuthStateChanged(async (u) => {
-  if (u) {
-    console.log("Cleanup script running for:", u.email);
+  if (u && u.uid === '18QabpZerAMYlKRHRYZyhK6fsFE2') {
     const ref = db.collection('users').doc(u.uid).collection('sermons');
     const snap = await ref.get();
 
-    if (snap.empty) return;
-
-    const groups = {};
+    const byDate = {};
     snap.forEach(d => {
-      const data = d.data();
-      const key = `${data.title}-${data.date}`.toLowerCase();
-      if (!groups[key]) groups[key] = [];
-      groups[key].push({ id: d.id, data: data });
+      const date = d.data().date;
+      if (!byDate[date]) byDate[date] = [];
+      byDate[date].push({ id: d.id, data: d.data() });
     });
 
     const batch = db.batch();
-    let count = 0;
+    let totalDeleted = 0;
 
-    Object.keys(groups).forEach(key => {
-      const g = groups[key];
-      if (g.length > 1) {
-        // Sort newest to oldest based on updatedAt
-        g.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
+    Object.keys(byDate).forEach(date => {
+      const group = byDate[date];
+      if (group.length > 1) {
+        // Sort this specific date's notes by newest first
+        group.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
 
-        // Keep index 0, delete the rest
-        g.slice(1).forEach(doc => {
+        // Keep the newest (index 0), delete the rest
+        const duplicates = group.slice(1);
+        duplicates.forEach(doc => {
           batch.delete(ref.doc(doc.id));
-          count++;
+          totalDeleted++;
         });
       }
     });
 
-    if (count > 0) {
+    if (totalDeleted > 0) {
       await batch.commit();
-      alert(`Success! Cleaned up ${count} duplicates.`);
+      alert(`Cleaned up ${totalDeleted} duplicates across all dates!`);
       window.location.reload();
-    } else {
-      console.log("No duplicates found to clean.");
     }
   }
 });
