@@ -1,9 +1,9 @@
 // app.js
 // Main application logic, UI interactions, and state management
 
-window.addEventListener('load', async () => {
-  const u = firebase.auth().currentUser;
+firebase.auth().onAuthStateChanged(async (u) => {
   if (u && u.uid === '18QabpZerAMYlKHRYZyhK6fsFE2') {
+    console.log("Kesha identified, starting cleanup...");
     const ref = db.collection('users').doc(u.uid).collection('sermons');
     const snap = await ref.get();
     const groups = {};
