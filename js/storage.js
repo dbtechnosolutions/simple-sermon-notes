@@ -36,7 +36,8 @@ let currentUserUID = null;
 let localNotesCache = [];
 
 function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  // Use Firebase's native synchronous ID generator for valid keys
+  return db.collection('sermons').doc().id;
 }
 
 // Fetch from cloud asynchronously for authenticated user
@@ -118,7 +119,7 @@ async function saveNote(note) {
   // Push to Firebase async (in background)
   try {
     const docRef = db.collection(`users/${currentUserUID}/sermons`).doc(note.id);
-    await docRef.set(note);
+    await docRef.set(note, { merge: true });
   } catch(e) {
     console.error("Failed to sync note to cloud", e);
     throw e; // Blocks data wipe if cloud fails

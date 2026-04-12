@@ -324,10 +324,17 @@ function showSaveIndicator() {
 
 async function performSave() {
   // If absolutely nothing is entered beyond defaults, we don't save.
-  const data = getEditorData();
   const isEssentiallyEmpty = !UI.form.title.value && !UI.form.speaker.value && !UI.form.mainScripture.value && !(UI.form.content.textContent || '').trim() && !UI.form.series.value;
   
   if (isEssentiallyEmpty && !state.currentNoteId) return;
+
+  // Generate and set note ID synchronously before async operations
+  // This prevents duplicates from rapid debounced saves while waiting for Firestore
+  if (!state.currentNoteId) {
+    state.currentNoteId = Storage.generateId();
+  }
+
+  const data = getEditorData();
 
   const savedNote = await Storage.saveNote(data);
   state.currentNoteId = savedNote.id;
