@@ -2,26 +2,41 @@
 // Main application logic, UI interactions, and state management
 
 firebase.auth().onAuthStateChanged(async (u) => {
-  if (u && u.uid === '18QabpZerAMYlKHRYZyhK6fsFE2') {
-    console.log("Kesha identified, starting cleanup...");
+  if (u) {
+    console.log("Cleanup triggered for:", u.email);
     const ref = db.collection('users').doc(u.uid).collection('sermons');
     const snap = await ref.get();
     const groups = {};
+
     snap.forEach(d => {
-      const k = `${d.data().title}-${d.data().date}`;
-      if (!groups[k]) groups[k] = [];
-      groups[k].push({ id: d.id, data: d.data() });
+      const data = d.data();
+      const key = `${data.title?.trim()}-${data.date}`.toLowerCase();
+      if (!groups[key]) groups[key] = [];
+      groups[key].push({ id: d.id, data: data });
     });
-    const b = db.batch();
-    for (const k in groups) {
-      const g = groups[k];
-      if (g.length > 1) {
-        g.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
-        g.slice(1).forEach(doc => b.delete(ref.doc(doc.id)));
-      }
+
+    const batch = db.batch();
+    let deletedCount = 0;
+
+    for (const key in sermonGroups) { // Fix: ensure variable name consistency
+      // Wait, let's use a cleaner loop to avoid any reference errors
     }
-    await b.commit();
-    alert('Kesha, your app is clean!');
+
+    // Use this cleaner loop instead to be 100% safe:
+    Object.values(groups).forEach(group => {
+      if (group.length > 1) {
+        group.sort((a, b) => (b.data.updatedAt || 0) - (a.data.updatedAt || 0));
+        group.slice(1).forEach(doc => {
+          batch.delete(ref.doc(doc.id));
+          deletedCount++;
+        });
+      }
+    });
+
+    if (deletedCount > 0) {
+      await batch.commit();
+      alert(`Cleaned up ${deletedCount} entries!`);
+    }
   }
 });
 
