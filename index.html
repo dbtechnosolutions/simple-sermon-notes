@@ -79,14 +79,10 @@
                 </div>
               </div>
               <div class="input-group" style="margin-top: 0.5rem;">
-                <i class="ph ph-book-open-text"></i>
-                <input type="text" id="note-main-scripture" placeholder="Main Scripture (e.g., John 3:16)" autocomplete="off">
+                <button type="button" id="btn-open-bible-picker" class="btn-primary full-width" onclick="window.openBiblePicker()">
+                  <i class="ph-bold ph-book-open-text"></i> Add Scripture
+                </button>
               </div>
-              
-              <div id="scripture-preview" class="scripture-preview hidden">
-                <div class="scripture-text" id="scripture-preview-text"></div>
-              <div class="scripture-meta" id="scripture-preview-meta"></div>
-            </div>
 
             <div class="series-container" id="series-container">
               <button type="button" class="btn-text-muted" onclick="toggleSeriesInput()" id="btn-add-series">
@@ -166,5 +162,24 @@
       });
     }
   </script>
+  <!-- Bible Picker Modal -->
+  <div id="bible-picker-modal" class="modal-overlay hidden">
+    <div class="bible-picker-container">
+      <div class="bible-picker-header">
+        <button type="button" class="btn-icon" onclick="window.biblePickerBack()" id="bible-picker-back">
+          <i class="ph-bold ph-arrow-left"></i>
+        </button>
+        <span id="bible-picker-breadcrumb" class="bible-picker-breadcrumb">Books</span>
+        <button type="button" class="btn-icon" onclick="window.closeBiblePicker()">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+      <div id="bible-picker-grid" class="bible-grid"></div>
+      <div class="bible-picker-footer hidden" id="bible-picker-footer">
+        <button type="button" class="btn-primary full-width" onclick="window.finalizeVerseSelection()">Done</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
