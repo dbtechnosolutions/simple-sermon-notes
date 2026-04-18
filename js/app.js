@@ -588,8 +588,20 @@ let biblePickerState = {
 
 window.openBiblePicker = function() {
   biblePickerState = { step: 'books', book: null, chapter: null, startVerse: null, endVerse: null };
-  UI.biblePicker.modal.classList.remove('hidden');
-  renderBibleBooks();
+  const modal = document.getElementById('bible-picker-modal');
+  if (modal) {
+    // Re-initialize mapped elements to be safe against load-order issues
+    UI.biblePicker.modal = modal;
+    UI.biblePicker.grid = document.getElementById('bible-picker-grid');
+    UI.biblePicker.back = document.getElementById('bible-picker-back');
+    UI.biblePicker.breadcrumb = document.getElementById('bible-picker-breadcrumb');
+    UI.biblePicker.footer = document.getElementById('bible-picker-footer');
+    
+    UI.biblePicker.modal.classList.remove('hidden');
+    renderBibleBooks();
+  } else {
+    console.error("Bible Picker Modal not found in DOM.");
+  }
 };
 
 window.closeBiblePicker = function() {
