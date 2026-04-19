@@ -642,7 +642,11 @@ window.openBiblePicker = function() {
     UI.biblePicker.breadcrumb = document.getElementById('bible-picker-breadcrumb');
     UI.biblePicker.footer = document.getElementById('bible-picker-footer');
     
-    UI.biblePicker.modal.classList.remove('hidden');
+    UI.biblePicker.modal.style.display = 'flex';
+    // Small timeout to allow the display:flex to register before CSS transition removes transform
+    setTimeout(() => {
+      UI.biblePicker.modal.classList.remove('hidden');
+    }, 10);
     renderBibleBooks();
   } else {
     console.error("Bible Picker Modal not found in DOM.");
@@ -651,6 +655,10 @@ window.openBiblePicker = function() {
 
 window.closeBiblePicker = function() {
   UI.biblePicker.modal.classList.add('hidden');
+  // Wait for the opacity/transform transition to finish before totally removing from DOM flow
+  setTimeout(() => {
+    UI.biblePicker.modal.style.display = 'none';
+  }, 150); // matches var(--transition-fast) = 0.15s
 };
 
 window.biblePickerBack = function() {
