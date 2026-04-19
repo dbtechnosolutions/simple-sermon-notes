@@ -57,8 +57,8 @@
     </div>
   </div>
 
-  <div id="app-container" class="max-w-[600px] mx-auto h-screen flex flex-col relative">
-    <header class="sticky top-0 z-10 flex justify-between items-center px-4 py-3 bg-white/90 backdrop-blur-md border-b border-slate-200">
+  <div id="app-container" class="max-w-[600px] mx-auto h-screen flex flex-col overflow-hidden relative">
+    <header class="sticky top-0 z-30 bg-white border-b border-slate-200 flex justify-between items-center px-4 py-3">
       <div class="flex items-center gap-2">
         <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-back-sermons" onclick="switchView('list')" title="Back to Sermons" style="display: none;">
           <i class="ph-bold ph-arrow-left text-xl"></i>
@@ -82,7 +82,7 @@
       </div>
     </header>
 
-    <main class="flex-1 flex flex-col overflow-y-auto">
+    <main class="flex-1 flex flex-col overflow-hidden">
       
       <!-- Auth View -->
       <section id="auth-view" class="view flex-1 flex flex-col justify-center items-center text-center p-4">
@@ -95,10 +95,10 @@
       </section>
 
       <!-- Editor View -->
-      <section id="editor-view" class="view flex-1 flex flex-col overflow-y-auto">
-        <form id="note-form" onsubmit="event.preventDefault();" class="flex flex-col flex-1">
+      <section id="editor-view" class="view flex-1 flex flex-col overflow-hidden">
+        <form id="note-form" onsubmit="event.preventDefault();" class="flex flex-col flex-1 overflow-hidden">
           <!-- Metadata Section -->
-          <div class="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100 flex-shrink-0">
+          <div class="sticky top-[60px] z-20 bg-slate-50 p-4 pb-2 border-b border-slate-200 flex-shrink-0">
             <div class="metadata-header flex justify-center cursor-pointer items-center pb-2 border-b border-slate-200 mb-2" onclick="toggleMetadata()">
               <i id="metadata-chevron" class="ph-bold ph-caret-up text-slate-400 text-xl transition-transform duration-200"></i>
             </div>
@@ -146,8 +146,8 @@
           </div>
 
           <!-- Note Content -->
-          <div class="bg-white shadow-sm rounded-2xl flex flex-col mb-4 flex-1 border border-slate-100">
-            <div id="note-content" class="free-form-textarea rich-text-editor flex-1 p-5 text-[1.05rem] leading-relaxed text-slate-800 outline-none" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+          <div class="bg-white flex flex-col flex-1 overflow-y-auto relative">
+            <div id="note-content" class="free-form-textarea rich-text-editor flex-1 p-5 pb-32 text-[1.05rem] leading-relaxed text-slate-800 outline-none" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
             
             <div id="editor-toolbar" class="sticky bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
               <button class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center" type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
