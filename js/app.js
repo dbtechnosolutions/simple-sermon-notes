@@ -41,6 +41,13 @@ const UI = {
   appTitle: document.getElementById('app-title'),
   seriesBtn: document.getElementById('btn-add-series'),
   seriesWrapper: document.getElementById('series-input-wrapper'),
+  // Anchor Scripture
+  anchorScripture: {
+    container: document.getElementById('anchor-scripture-container'),
+    citationText: document.getElementById('citation-text'),
+    body: document.getElementById('scripture-body'),
+    chevron: document.getElementById('scripture-chevron')
+  },
   // Bible Picker
   biblePicker: {
     modal: document.getElementById('bible-picker-modal'),
@@ -221,6 +228,16 @@ function loadNoteIntoEditor(id) {
   UI.form.fetchedScriptureText = note.fetchedScriptureText || null;
   UI.form.fetchedScriptureMeta = note.fetchedScriptureMeta || null;
 
+  if (state.mainScripture && UI.form.fetchedScriptureText) {
+    UI.anchorScripture.citationText.textContent = state.mainScripture;
+    UI.anchorScripture.body.innerHTML = UI.form.fetchedScriptureText;
+    UI.anchorScripture.container.classList.remove('hidden');
+  } else {
+    UI.anchorScripture.container.classList.add('hidden');
+    UI.anchorScripture.citationText.textContent = '';
+    UI.anchorScripture.body.innerHTML = '';
+  }
+
   updateSeriesVisibility();
 }
 
@@ -237,9 +254,28 @@ window.createNewNote = function () {
   UI.form.content.innerHTML = '';
   UI.form.fetchedScriptureText = null;
   UI.form.fetchedScriptureMeta = null;
+  
+  UI.anchorScripture.container.classList.add('hidden');
+  UI.anchorScripture.citationText.textContent = '';
+  UI.anchorScripture.body.innerHTML = '';
+  UI.anchorScripture.container.classList.add('collapsed');
+  UI.anchorScripture.body.classList.add('hidden');
+  
   updateSeriesVisibility();
 
   switchView('editor');
+};
+
+window.toggleScripture = function() {
+  const container = UI.anchorScripture.container;
+  const body = UI.anchorScripture.body;
+  
+  container.classList.toggle('collapsed');
+  if (container.classList.contains('collapsed')) {
+    body.classList.add('hidden');
+  } else {
+    body.classList.remove('hidden');
+  }
 };
 
 window.finalizeNote = function () {
@@ -757,17 +793,13 @@ window.finalizeVerseSelection = async function() {
   let endpoint = `${book} ${chapter}:${startVerse}`;
   if (endVerse) endpoint += `-${endVerse}`;
   
-  let newlySetMain = false;
-  if (!state.mainScripture) {
-    state.mainScripture = endpoint;
-    newlySetMain = true;
-  }
-
-  // Pre-insert a loading block so the user knows it's fetching
-  UI.form.content.focus();
-  const tempId = 'fetching-' + Date.now();
-  const loadingHtml = `<div class="scripture-block fetching-block" id="${tempId}" contenteditable="false"><i class="ph ph-spinner"></i> Fetching ${endpoint}...</div><p><br></p>`;
-  document.execCommand('insertHTML', false, loadingHtml);
+  state.mainScripture = endpoint;
+  UI.anchorScripture.citationText.textContent = endpoint;
+  UI.anchorScripture.container.classList.remove('hidden');
+  
+  UI.anchorScripture.body.innerHTML = `<i class="ph ph-spinner"></i> Fetching ${endpoint}...`;
+  UI.anchorScripture.container.classList.remove('collapsed');
+  UI.anchorScripture.body.classList.remove('hidden');
 
   try {
     const response = await fetch(`https://bible-api.com/${encodeURIComponent(endpoint)}?translation=kjv`);
@@ -779,23 +811,15 @@ window.finalizeVerseSelection = async function() {
        versesHtml += `<sup class="v-num" contenteditable="false">${v.verse}</sup>${v.text.trim()} `;
     });
     
-    // Replace the temp node with actual content
-    const tempNode = document.getElementById(tempId);
-    if (tempNode) {
-        tempNode.innerHTML = versesHtml;
-        tempNode.classList.remove('fetching-block');
-        tempNode.removeAttribute('id');
-    }
+    UI.anchorScripture.body.innerHTML = versesHtml;
+    UI.form.fetchedScriptureText = versesHtml;
     
-    if (newlySetMain && typeof triggerAutoSave === 'function') {
+    if (typeof triggerAutoSave === 'function') {
         triggerAutoSave();
     }
   } catch(e) {
     console.error('Bible API fetch failed', e);
-    const tempNode = document.getElementById(tempId);
-    if (tempNode) {
-        tempNode.outerHTML = `<div contenteditable="false" style="color:red">Failed to fetch scripture. <button onclick="this.parentElement.remove()">Remove</button></div>`;
-    }
+    UI.anchorScripture.body.innerHTML = `<span style="color:red">Failed to fetch scripture. Please try again.</span>`;
   }
 };
 

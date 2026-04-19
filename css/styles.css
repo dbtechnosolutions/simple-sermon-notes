@@ -677,10 +677,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: var(--bg-primary);
-  z-index: 9999;
+  z-index: 10000;
+  background-color: #121212;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 .modal-overlay.hidden {
@@ -772,3 +773,49 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   user-select: none;
 }
 
+/* Collapsible Anchor Component */
+.scripture-card {
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-primary);
+  overflow: hidden;
+}
+.scripture-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.scripture-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.book-icon {
+  font-size: 1.1rem;
+}
+.citation-text {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.chevron-icon {
+  color: var(--text-tertiary);
+  transition: transform var(--transition-fast);
+}
+.scripture-body {
+  padding: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  border-top: 1px solid var(--border-color);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.scripture-body.hidden {
+  display: none;
+}
+.scripture-card.collapsed .chevron-icon {
+  transform: rotate(-90deg);
+}

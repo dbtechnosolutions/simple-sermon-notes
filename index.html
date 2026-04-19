@@ -83,6 +83,17 @@
                   <i class="ph-bold ph-book-open-text"></i> Add Scripture
                 </button>
               </div>
+              
+              <div id="anchor-scripture-container" class="scripture-card hidden" style="margin-top: 0.5rem;">
+                <div id="scripture-header" class="scripture-header" onclick="window.toggleScripture()">
+                  <div class="scripture-header-left">
+                    <span class="book-icon">📖</span>
+                    <span id="citation-text" class="citation-text"></span>
+                  </div>
+                  <i id="scripture-chevron" class="ph-bold ph-caret-down chevron-icon"></i>
+                </div>
+                <div id="scripture-body" class="scripture-body hidden"></div>
+              </div>
 
             <div class="series-container" id="series-container">
               <button type="button" class="btn-text-muted" onclick="toggleSeriesInput()" id="btn-add-series">
