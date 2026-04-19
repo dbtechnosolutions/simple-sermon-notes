@@ -76,7 +76,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 1rem 0;
   padding: 1rem;
   background: #f1f5f9; /* slate-100 */
-  border-left: 3px solid #0d9488; /* teal-600 */
+  border-left: 3px solid #9333ea; /* purple-600 */
   border-radius: 0 0.5rem 0.5rem 0;
   color: #334155; /* slate-700 */
   font-size: 0.95rem;
