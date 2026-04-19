@@ -409,7 +409,7 @@ function createNoteCard(note) {
   header.style.alignItems = 'flex-start';
 
   const title = document.createElement('div');
-  title.className = 'text-xl font-bold text-slate-900 mb-2 leading-tight pr-4';
+  title.className = 'text-xl font-bold text-slate-900 mb-2 leading-tight pr-4 break-words whitespace-normal line-clamp-2';
   title.textContent = note.title;
 
   const delBtn = document.createElement('button');
