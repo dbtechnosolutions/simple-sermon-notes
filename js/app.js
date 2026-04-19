@@ -75,9 +75,9 @@ function updateToolbarState() {
   commands.forEach((command, index) => {
     const isActive = document.queryCommandState(command);
     if (isActive) {
-      buttons[index].classList.add('!text-purple-600', 'bg-purple-50');
+      buttons[index].classList.add('!text-violet-900', 'bg-violet-50');
     } else {
-      buttons[index].classList.remove('!text-purple-600', 'bg-purple-50');
+      buttons[index].classList.remove('!text-violet-900', 'bg-violet-50');
     }
   });
 }
@@ -397,7 +397,7 @@ window.deleteSermon = async function (e, id) {
 
 function createNoteCard(note) {
   const d = document.createElement('div');
-  d.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-purple-500 hover:shadow-md cursor-pointer block';
+  d.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-violet-900 hover:shadow-md cursor-pointer block';
   d.onclick = () => {
     loadNoteIntoEditor(note.id);
     switchView('editor');
@@ -425,16 +425,16 @@ function createNoteCard(note) {
   meta.className = 'flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500 font-medium mt-1';
 
   if (note.date) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-calendar-blank text-purple-600 text-base"></i>${formatDate(note.date)}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-calendar-blank text-violet-900 text-base"></i>${formatDate(note.date)}</span>`;
   }
   if (note.speaker) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-user text-purple-600 text-base"></i>${note.speaker}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-user text-violet-900 text-base"></i>${note.speaker}</span>`;
   }
   if (note.mainScripture) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-book-open-text text-purple-600 text-base"></i>${note.mainScripture}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-book-open-text text-violet-900 text-base"></i>${note.mainScripture}</span>`;
   }
   if (note.series) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-purple-600 text-base"></i>${note.series}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-violet-900 text-base"></i>${note.series}</span>`;
   }
 
   d.appendChild(header);
@@ -499,7 +499,7 @@ function renderNotesList() {
   for (const [seriesName, seriesNotes] of Object.entries(groups)) {
     const header = document.createElement('h3');
     header.className = 'text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-2 mt-6 flex items-center gap-2 tracking-tight';
-    header.innerHTML = `<i class="ph-fill ph-books text-purple-600"></i> ${seriesName}`;
+    header.innerHTML = `<i class="ph-fill ph-books text-violet-900"></i> ${seriesName}`;
     UI.notesContainer.appendChild(header);
 
     seriesNotes.forEach(note => {
@@ -782,12 +782,12 @@ function renderVersesGrid(numVerses) {
     div.textContent = i;
     
     if (startVerse === i && !endVerse) {
-      div.classList.add('!bg-purple-600', '!text-white');
+      div.classList.add('!bg-violet-900', '!text-white');
     } else if (startVerse && endVerse) {
       if (i === startVerse || i === endVerse) {
-        div.classList.add('!bg-purple-600', '!text-white');
+        div.classList.add('!bg-violet-900', '!text-white');
       } else if (i > startVerse && i < endVerse) {
-        div.classList.add('!bg-purple-600/20', '!text-purple-600');
+        div.classList.add('!bg-violet-900/20', '!text-violet-900');
       }
     }
     
