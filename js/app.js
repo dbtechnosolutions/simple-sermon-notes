@@ -234,6 +234,10 @@ function loadNoteIntoEditor(id) {
     UI.anchorScripture.body.innerHTML = UI.form.fetchedScriptureText;
     UI.anchorScripture.container.classList.remove('hidden');
     UI.btnOpenBiblePickerWrapper.style.display = 'none';
+    
+    // Default to collapsed state on load
+    UI.anchorScripture.container.classList.add('collapsed');
+    UI.anchorScripture.body.classList.add('hidden');
   } else {
     UI.anchorScripture.container.classList.add('hidden');
     UI.anchorScripture.citationText.textContent = '';
@@ -865,6 +869,10 @@ window.finalizeVerseSelection = async function() {
     
     UI.anchorScripture.body.innerHTML = versesHtml;
     UI.form.fetchedScriptureText = versesHtml;
+    
+    // Auto-collapse after successful fetch to save screen real estate
+    UI.anchorScripture.container.classList.add('collapsed');
+    UI.anchorScripture.body.classList.add('hidden');
     
     if (typeof triggerAutoSave === 'function') {
         triggerAutoSave();
