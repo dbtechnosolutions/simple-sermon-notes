@@ -63,7 +63,30 @@ const UI = {
 window.formatText = function (command) {
   document.execCommand(command, false, null);
   UI.form.content.focus();
+  updateToolbarState();
 };
+
+function updateToolbarState() {
+  const commands = ['bold', 'italic', 'underline'];
+  const buttons = document.querySelectorAll('.toolbar-btn');
+  
+  if (buttons.length < 3) return; // safeguard if UI not loaded
+  
+  commands.forEach((command, index) => {
+    const isActive = document.queryCommandState(command);
+    if (isActive) {
+      buttons[index].classList.add('!text-teal-600', 'bg-teal-50');
+    } else {
+      buttons[index].classList.remove('!text-teal-600', 'bg-teal-50');
+    }
+  });
+}
+
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement === UI.form.content) {
+    updateToolbarState();
+  }
+});
 
 UI.form.content.addEventListener('paste', function (e) {
   e.preventDefault();
@@ -374,7 +397,7 @@ window.deleteSermon = async function (e, id) {
 
 function createNoteCard(note) {
   const d = document.createElement('div');
-  d.className = 'note-card';
+  d.className = 'bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-teal-500 hover:shadow-md cursor-pointer block';
   d.onclick = () => {
     loadNoteIntoEditor(note.id);
     switchView('editor');
@@ -386,32 +409,32 @@ function createNoteCard(note) {
   header.style.alignItems = 'flex-start';
 
   const title = document.createElement('div');
-  title.className = 'note-card-title';
+  title.className = 'text-xl font-bold text-slate-900 mb-2 leading-tight pr-4';
   title.textContent = note.title;
 
   const delBtn = document.createElement('button');
-  delBtn.className = 'btn-delete-card';
+  delBtn.className = 'text-slate-300 hover:text-red-500 transition-colors p-1 -mt-1 -mr-1 flex items-center justify-center';
   delBtn.title = 'Delete Sermon';
-  delBtn.innerHTML = '<i class="ph-bold ph-trash"></i>';
+  delBtn.innerHTML = '<i class="ph-bold ph-trash text-[1.3rem]"></i>';
   delBtn.onclick = (e) => window.deleteSermon(e, note.id);
 
   header.appendChild(title);
   header.appendChild(delBtn);
 
   const meta = document.createElement('div');
-  meta.className = 'note-card-meta';
+  meta.className = 'flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500 font-medium mt-1';
 
   if (note.date) {
-    meta.innerHTML += `<span><i class="ph ph-calendar-blank"></i>${formatDate(note.date)}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-calendar-blank text-teal-600 text-base"></i>${formatDate(note.date)}</span>`;
   }
   if (note.speaker) {
-    meta.innerHTML += `<span><i class="ph ph-user"></i>${note.speaker}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-user text-teal-600 text-base"></i>${note.speaker}</span>`;
   }
   if (note.mainScripture) {
-    meta.innerHTML += `<span><i class="ph ph-book-open-text"></i>${note.mainScripture}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-book-open-text text-teal-600 text-base"></i>${note.mainScripture}</span>`;
   }
   if (note.series) {
-    meta.innerHTML += `<span><i class="ph ph-books"></i>${note.series}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-teal-600 text-base"></i>${note.series}</span>`;
   }
 
   d.appendChild(header);
@@ -475,8 +498,8 @@ function renderNotesList() {
 
   for (const [seriesName, seriesNotes] of Object.entries(groups)) {
     const header = document.createElement('h3');
-    header.className = 'series-group-header';
-    header.innerHTML = `<i class="ph-fill ph-books"></i> ${seriesName}`;
+    header.className = 'text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-2 mt-6 flex items-center gap-2 tracking-tight';
+    header.innerHTML = `<i class="ph-fill ph-books text-teal-600"></i> ${seriesName}`;
     UI.notesContainer.appendChild(header);
 
     seriesNotes.forEach(note => {
@@ -699,12 +722,12 @@ function renderBibleBooks() {
   updateBreadcrumb();
   UI.biblePicker.footer.classList.add('hidden');
   updateSelectionHint();
-  UI.biblePicker.grid.className = 'bible-grid grid-cols-3';
+  UI.biblePicker.grid.className = 'flex-1 overflow-y-auto p-4 grid gap-3 content-start w-full box-border grid-cols-3';
   UI.biblePicker.grid.innerHTML = '';
   
   Object.keys(bibleData).forEach(book => {
     const div = document.createElement('div');
-    div.className = 'grid-item';
+    div.className = 'bg-slate-100 hover:bg-slate-200 rounded-lg py-4 text-slate-700 text-center font-medium cursor-pointer transition-colors flex items-center justify-center break-words';
     div.textContent = book;
     div.onclick = () => window.selectBook(book);
     UI.biblePicker.grid.appendChild(div);
@@ -721,13 +744,13 @@ function renderBibleChapters(book) {
   updateBreadcrumb();
   UI.biblePicker.footer.classList.add('hidden');
   updateSelectionHint();
-  UI.biblePicker.grid.className = 'bible-grid grid-cols-5';
+  UI.biblePicker.grid.className = 'flex-1 overflow-y-auto p-4 grid gap-3 content-start w-full box-border grid-cols-5';
   UI.biblePicker.grid.innerHTML = '';
   
   const numChapters = bibleData[book].length;
   for (let i = 1; i <= numChapters; i++) {
     const div = document.createElement('div');
-    div.className = 'grid-item';
+    div.className = 'bg-slate-100 hover:bg-slate-200 rounded-lg py-4 text-slate-700 text-center font-medium cursor-pointer transition-colors flex items-center justify-center break-words';
     div.textContent = i;
     div.onclick = () => window.selectChapter(i);
     UI.biblePicker.grid.appendChild(div);
@@ -742,7 +765,7 @@ window.selectChapter = function(chapter) {
 function renderBibleVerses(book, chapter) {
   biblePickerState.step = 'verses';
   updateBreadcrumb();
-  UI.biblePicker.grid.className = 'bible-grid grid-cols-5';
+  UI.biblePicker.grid.className = 'flex-1 overflow-y-auto p-4 grid gap-3 content-start w-full box-border grid-cols-5';
   
   const numVerses = bibleData[book][chapter - 1]; // array is 0-indexed
   renderVersesGrid(numVerses);
@@ -755,16 +778,16 @@ function renderVersesGrid(numVerses) {
   
   for (let i = 1; i <= numVerses; i++) {
     const div = document.createElement('div');
-    div.className = 'grid-item';
+    div.className = 'bg-slate-100 hover:bg-slate-200 rounded-lg py-4 text-slate-700 text-center font-medium cursor-pointer transition-colors flex items-center justify-center break-words';
     div.textContent = i;
     
     if (startVerse === i && !endVerse) {
-      div.classList.add('selected');
+      div.classList.add('!bg-teal-600', '!text-white');
     } else if (startVerse && endVerse) {
       if (i === startVerse || i === endVerse) {
-        div.classList.add('selected');
+        div.classList.add('!bg-teal-600', '!text-white');
       } else if (i > startVerse && i < endVerse) {
-        div.classList.add('range-highlight');
+        div.classList.add('!bg-teal-600/20', '!text-teal-600');
       }
     }
     
