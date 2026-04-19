@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,34 +26,43 @@
     }
   </script>
   <link rel="stylesheet" href="css/styles.css">
-  
+
   <!-- Progressive Web App Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f8fafc">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Sermon Notes">
-  <link rel="apple-touch-icon" href="./assets/icon-192-v2.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v2.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512-v2.png">
+  <link rel="apple-touch-icon" href="./Assets/icon-192-v2.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./Assets/icon-192-v2.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./Assets/icon-512-v2.png">
 </head>
+
 <body class="bg-slate-50 text-slate-900 font-sans h-screen overflow-x-hidden overscroll-none">
   <!-- Bible Picker Modal -->
-  <div id="bible-picker-modal" class="modal-overlay hidden fixed inset-0 z-[10000] bg-white/95 backdrop-blur-md overflow-y-auto flex flex-col transition-all duration-150" style="display: none;">
+  <div id="bible-picker-modal"
+    class="modal-overlay hidden fixed inset-0 z-[10000] bg-white/95 backdrop-blur-md overflow-y-auto flex flex-col transition-all duration-150"
+    style="display: none;">
     <div class="flex flex-col h-full max-w-[600px] mx-auto w-full bg-transparent">
       <div class="flex items-center justify-between p-4 border-b border-slate-200 bg-white shadow-sm">
-        <button type="button" class="p-2 text-slate-400 hover:text-slate-900 transition-colors" onclick="window.biblePickerBack()" id="bible-picker-back">
+        <button type="button" class="p-2 text-slate-400 hover:text-slate-900 transition-colors"
+          onclick="window.biblePickerBack()" id="bible-picker-back">
           <i class="ph-bold ph-arrow-left text-xl"></i>
         </button>
         <span id="bible-picker-breadcrumb" class="font-semibold text-lg text-slate-900">Books</span>
-        <button type="button" class="p-2 text-slate-400 hover:text-slate-900 transition-colors" onclick="window.closeBiblePicker()">
+        <button type="button" class="p-2 text-slate-400 hover:text-slate-900 transition-colors"
+          onclick="window.closeBiblePicker()">
           <i class="ph-bold ph-x text-xl"></i>
         </button>
       </div>
-      <div id="selection-hint" class="text-sm text-slate-500 text-center py-2 bg-slate-50 border-b border-slate-100 hidden">Tap a verse to begin</div>
+      <div id="selection-hint"
+        class="text-sm text-slate-500 text-center py-2 bg-slate-50 border-b border-slate-100 hidden">Tap a verse to
+        begin</div>
       <div id="bible-picker-grid" class="flex-1 overflow-y-auto p-4 grid gap-3 content-start w-full box-border"></div>
       <div class="p-4 border-t border-slate-200 bg-white hidden" id="bible-picker-footer">
-        <button type="button" class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95" onclick="window.finalizeVerseSelection()">Done</button>
+        <button type="button"
+          class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
+          onclick="window.finalizeVerseSelection()">Done</button>
       </div>
     </div>
   </div>
@@ -60,36 +70,44 @@
   <div id="app-container" class="max-w-[600px] mx-auto h-screen flex flex-col overflow-hidden bg-slate-50 relative">
     <header class="bg-white border-b border-slate-200 flex justify-between items-center px-4 py-3 shrink-0">
       <div class="flex items-center gap-2">
-        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-back-sermons" onclick="switchView('list')" title="Back to Sermons" style="display: none;">
+        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-back-sermons"
+          onclick="switchView('list')" title="Back to Sermons" style="display: none;">
           <i class="ph-bold ph-arrow-left text-xl"></i>
         </button>
         <h1 id="app-title" class="text-xl font-semibold text-slate-900">New Note</h1>
       </div>
       <div class="flex items-center gap-3">
-        <span class="save-indicator text-xs text-slate-500 opacity-0 transition-opacity" id="save-indicator">Saved</span>
-        <button class="btn-icon text-slate-400 hover:text-red-500 transition-colors p-1" id="btn-delete-note" onclick="deleteCurrentNote()" title="Delete Note" style="display: none;">
+        <span class="save-indicator text-xs text-slate-500 opacity-0 transition-opacity"
+          id="save-indicator">Saved</span>
+        <button class="btn-icon text-slate-400 hover:text-red-500 transition-colors p-1" id="btn-delete-note"
+          onclick="deleteCurrentNote()" title="Delete Note" style="display: none;">
           <i class="ph-bold ph-trash text-xl"></i>
         </button>
-        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-finalize-note" onclick="finalizeNote()" title="Finalize Note" style="display: none;">
+        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-finalize-note"
+          onclick="finalizeNote()" title="Finalize Note" style="display: none;">
           <i class="ph-fill ph-check-circle text-xl"></i>
         </button>
-        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-new-note" onclick="createNewNote()" title="Start New Note">
+        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-new-note"
+          onclick="createNewNote()" title="Start New Note">
           <i class="ph-bold ph-plus text-xl"></i>
         </button>
-        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-logout" onclick="window.signOutAction()" title="Sign Out">
+        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-logout"
+          onclick="window.signOutAction()" title="Sign Out">
           <i class="ph-bold ph-sign-out text-xl"></i>
         </button>
       </div>
     </header>
 
     <main class="flex-1 flex flex-col overflow-hidden">
-      
+
       <!-- Auth View -->
       <section id="auth-view" class="view flex-1 flex flex-col justify-center items-center text-center p-4">
         <i class="ph-fill ph-books outline-none text-[5rem] text-violet-900 mb-6 drop-shadow-lg"></i>
         <h2 class="text-3xl font-bold text-slate-900 mb-2">Sermon Notes</h2>
         <p class="text-slate-500 mb-8 max-w-[80%]">Securely sync your library exactly across your devices.</p>
-        <button class="bg-violet-900 text-white font-semibold rounded-full px-8 py-4 flex items-center gap-3 transition-transform active:scale-95 shadow-md shadow-violet-900/30" onclick="window.signInAction()">
+        <button
+          class="bg-violet-900 text-white font-semibold rounded-full px-8 py-4 flex items-center gap-3 transition-transform active:scale-95 shadow-md shadow-violet-900/30"
+          onclick="window.signInAction()">
           <i class="ph-fill ph-google-logo text-xl"></i> Sign in with Google
         </button>
       </section>
@@ -99,46 +117,65 @@
         <form id="note-form" onsubmit="event.preventDefault();" class="flex flex-col flex-1 overflow-hidden">
           <!-- Metadata Section -->
           <div class="bg-slate-50 p-4 pb-2 border-b border-slate-200 flex-shrink-0">
-            <div class="metadata-header flex justify-center cursor-pointer items-center pb-2 border-b border-slate-200 mb-2" onclick="toggleMetadata()">
-              <i id="metadata-chevron" class="ph-bold ph-caret-up text-slate-400 text-xl transition-transform duration-200"></i>
+            <div
+              class="metadata-header flex justify-center cursor-pointer items-center pb-2 border-b border-slate-200 mb-2"
+              onclick="toggleMetadata()">
+              <i id="metadata-chevron"
+                class="ph-bold ph-caret-up text-slate-400 text-xl transition-transform duration-200"></i>
             </div>
             <div id="metadata-body" class="metadata-body">
-              <h1 id="note-title" contenteditable="true" role="textbox" class="w-full bg-transparent text-slate-900 text-3xl font-bold p-0 border-none focus:outline-none leading-tight break-words whitespace-normal min-h-[1.2em]"></h1>
+              <h1 id="note-title" contenteditable="true" role="textbox"
+                class="w-full bg-transparent text-slate-900 text-3xl font-bold p-0 border-none focus:outline-none leading-tight break-words whitespace-normal min-h-[1.2em]">
+              </h1>
               <div class="flex gap-4 mb-2 mt-2">
                 <div class="flex-1 flex items-center gap-3 text-slate-500">
                   <i class="ph ph-user text-violet-900 text-lg"></i>
-                  <input type="text" id="note-speaker" class="bg-transparent focus:outline-none placeholder-slate-400 text-slate-900 w-full py-1" placeholder="Speaker" autocomplete="off">
+                  <input type="text" id="note-speaker"
+                    class="bg-transparent focus:outline-none placeholder-slate-400 text-slate-900 w-full py-1"
+                    placeholder="Speaker" autocomplete="off">
                 </div>
                 <div class="flex-1 flex items-center gap-3 text-slate-500">
                   <i class="ph ph-calendar-blank text-violet-900 text-lg"></i>
-                  <input type="date" id="note-date" class="bg-transparent focus:outline-none text-slate-900 w-full py-1">
+                  <input type="date" id="note-date"
+                    class="bg-transparent focus:outline-none text-slate-900 w-full py-1">
                 </div>
               </div>
               <div class="mt-2" id="add-scripture-wrapper">
-                <button type="button" id="btn-open-bible-picker" class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95" onclick="window.openBiblePicker()">
+                <button type="button" id="btn-open-bible-picker"
+                  class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
+                  onclick="window.openBiblePicker()">
                   <i class="ph-bold ph-book-open-text text-xl"></i> Add Scripture
                 </button>
               </div>
-              
-              <div id="anchor-scripture-container" class="bg-white border-l-4 border-violet-900 rounded-r-xl shadow-sm text-slate-800 mt-2 overflow-hidden hidden">
-                <div id="scripture-header" class="flex items-center justify-between p-3 cursor-pointer select-none" onclick="window.toggleScripture()">
+
+              <div id="anchor-scripture-container"
+                class="bg-white border-l-4 border-violet-900 rounded-r-xl shadow-sm text-slate-800 mt-2 overflow-hidden hidden">
+                <div id="scripture-header" class="flex items-center justify-between p-3 cursor-pointer select-none"
+                  onclick="window.toggleScripture()">
                   <div class="flex items-center gap-2 font-medium">
                     <span class="cursor-pointer" onclick="window.editScripture(event)" title="Edit Scripture">📖</span>
                     <span id="citation-text" class="text-slate-900"></span>
                   </div>
-                  <i id="scripture-chevron" class="ph-bold ph-caret-down text-slate-400 transition-transform duration-200"></i>
+                  <i id="scripture-chevron"
+                    class="ph-bold ph-caret-down text-slate-400 transition-transform duration-200"></i>
                 </div>
-                <div id="scripture-body" class="scripture-body hidden p-3 pt-0 border-t border-slate-50 text-slate-700 text-sm leading-relaxed max-h-64 overflow-y-auto"></div>
+                <div id="scripture-body"
+                  class="scripture-body hidden p-3 pt-0 border-t border-slate-50 text-slate-700 text-sm leading-relaxed max-h-64 overflow-y-auto">
+                </div>
               </div>
 
               <div class="series-container mt-2" id="series-container">
-                <button type="button" class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors py-2 text-sm font-medium" onclick="toggleSeriesInput()" id="btn-add-series">
+                <button type="button"
+                  class="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors py-2 text-sm font-medium"
+                  onclick="toggleSeriesInput()" id="btn-add-series">
                   <i class="ph ph-list-plus text-lg"></i> Add to Series
                 </button>
                 <div class="series-input-wrapper hidden" id="series-input-wrapper">
                   <div class="flex items-center gap-3 text-slate-500 mt-2">
                     <i class="ph ph-books text-violet-900 text-lg"></i>
-                    <input type="text" id="note-series" class="bg-transparent focus:outline-none placeholder-slate-400 text-slate-900 w-full py-1" placeholder="Series Title" autocomplete="off">
+                    <input type="text" id="note-series"
+                      class="bg-transparent focus:outline-none placeholder-slate-400 text-slate-900 w-full py-1"
+                      placeholder="Series Title" autocomplete="off">
                   </div>
                 </div>
               </div>
@@ -148,17 +185,26 @@
           <!-- Note Content -->
           <div class="bg-white flex flex-col flex-1 overflow-hidden relative shadow-sm border border-slate-100">
             <div class="flex-1 overflow-y-auto custom-scrollbar" style="scrollbar-gutter: stable;">
-              <div id="note-content" class="free-form-textarea rich-text-editor min-h-full p-5 pb-32 text-[1.05rem] leading-relaxed text-slate-800 outline-none" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+              <div id="note-content"
+                class="free-form-textarea rich-text-editor min-h-full p-5 pb-32 text-[1.05rem] leading-relaxed text-slate-800 outline-none"
+                contenteditable="true" data-placeholder="Start typing your notes here..."></div>
             </div>
-            
-            <div id="editor-toolbar" class="sticky bottom-0 w-full bg-white border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
-              <button class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center" type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+
+            <div id="editor-toolbar"
+              class="sticky bottom-0 w-full bg-white border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
+              <button
+                class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
+                type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
                 <i class="ph-bold ph-text-b text-xl"></i>
               </button>
-              <button class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center" type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+              <button
+                class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
+                type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)">
                 <i class="ph-bold ph-text-italic text-xl"></i>
               </button>
-              <button class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center" type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)">
+              <button
+                class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
+                type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)">
                 <i class="ph-bold ph-text-underline text-xl"></i>
               </button>
             </div>
@@ -171,26 +217,34 @@
       <!-- List View -->
       <section id="list-view" class="view hidden flex-1 flex flex-col p-4 overflow-y-auto pb-24">
         <div class="flex gap-2 items-center mb-6">
-          <div class="flex-1 flex items-center gap-2 bg-white border border-slate-200 px-4 rounded-full text-slate-500 shadow-sm">
+          <div
+            class="flex-1 flex items-center gap-2 bg-white border border-slate-200 px-4 rounded-full text-slate-500 shadow-sm">
             <i class="ph ph-magnifying-glass text-xl"></i>
-            <input type="text" id="search-input" class="bg-transparent focus:outline-none w-full py-3 text-slate-900" placeholder="Search notes..." autocomplete="off">
+            <input type="text" id="search-input" class="bg-transparent focus:outline-none w-full py-3 text-slate-900"
+              placeholder="Search notes..." autocomplete="off">
           </div>
           <div class="relative">
-            <select id="sort-select" class="bg-white border border-slate-200 text-slate-600 py-3 pl-4 pr-10 rounded-full appearance-none outline-none font-medium shadow-sm cursor-pointer" onchange="changeSortMode(event)">
+            <select id="sort-select"
+              class="bg-white border border-slate-200 text-slate-600 py-3 pl-4 pr-10 rounded-full appearance-none outline-none font-medium shadow-sm cursor-pointer"
+              onchange="changeSortMode(event)">
               <option value="chronological">Date (Newest)</option>
               <option value="series">By Series</option>
             </select>
-            <i class="ph-bold ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
+            <i
+              class="ph-bold ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"></i>
           </div>
         </div>
         <div id="notes-container" class="flex flex-col gap-4">
           <!-- Note cards go here -->
         </div>
-        
-        <div id="empty-state" class="empty-state hidden flex flex-col items-center justify-center p-16 text-center text-slate-400">
+
+        <div id="empty-state"
+          class="empty-state hidden flex flex-col items-center justify-center p-16 text-center text-slate-400">
           <i class="ph-fill ph-notebook text-[4rem] text-slate-200 mb-4 drop-shadow-sm"></i>
           <p class="mb-6 font-medium text-slate-500">No notes yet.</p>
-          <button class="bg-violet-900 text-white font-semibold rounded-lg px-6 py-3 shadow-md hover:bg-violet-950 active:scale-95 transition-all" onclick="createNewNote()">Start Writing</button>
+          <button
+            class="bg-violet-900 text-white font-semibold rounded-lg px-6 py-3 shadow-md hover:bg-violet-950 active:scale-95 transition-all"
+            onclick="createNewNote()">Start Writing</button>
         </div>
       </section>
 
@@ -216,4 +270,5 @@
   </script>
 
 </body>
+
 </html>
