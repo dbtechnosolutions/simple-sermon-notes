@@ -146,10 +146,12 @@
           </div>
 
           <!-- Note Content -->
-          <div class="bg-white flex flex-col flex-1 overflow-y-auto relative">
-            <div id="note-content" class="free-form-textarea rich-text-editor flex-1 p-5 pb-32 text-[1.05rem] leading-relaxed text-slate-800 outline-none" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+          <div class="bg-white flex flex-col flex-1 overflow-hidden relative shadow-sm border border-slate-100">
+            <div class="flex-1 overflow-y-auto custom-scrollbar" style="scrollbar-gutter: stable;">
+              <div id="note-content" class="free-form-textarea rich-text-editor min-h-full p-5 pb-32 text-[1.05rem] leading-relaxed text-slate-800 outline-none" contenteditable="true" data-placeholder="Start typing your notes here..."></div>
+            </div>
             
-            <div id="editor-toolbar" class="sticky bottom-0 w-full bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
+            <div id="editor-toolbar" class="sticky bottom-0 w-full bg-white border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
               <button class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center" type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
                 <i class="ph-bold ph-text-b text-xl"></i>
               </button>
