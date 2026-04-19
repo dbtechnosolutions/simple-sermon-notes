@@ -224,7 +224,7 @@ function updateSeriesVisibility() {
 function getEditorData() {
   return {
     id: state.currentNoteId,
-    title: UI.form.title.value || 'Untitled Sermon',
+    title: UI.form.title.innerText || 'Untitled Sermon',
     speaker: UI.form.speaker.value,
     date: UI.form.date.value || new Date().toISOString().split('T')[0],
     mainScripture: state.mainScripture,
@@ -242,17 +242,7 @@ function loadNoteIntoEditor(id) {
   state.currentNoteId = note.id;
   UI.appTitle.textContent = 'Edit Note';
 
-  UI.form.title.value = note.title === 'Untitled Sermon' ? '' : note.title;
-  // Trigger auto-resize for title textarea on load
-  if (UI.form.title) {
-    // Use a single, clean height reset
-    setTimeout(() => {
-        UI.form.title.style.height = 'auto';
-        // Force a minimum height of 48px if scrollHeight returns 0
-        const newHeight = Math.max(UI.form.title.scrollHeight, 48);
-        UI.form.title.style.height = newHeight + 'px';
-    }, 50);
-  }
+  UI.form.title.innerText = note.title === 'Untitled Sermon' ? '' : note.title;
   UI.form.speaker.value = note.speaker || '';
   UI.form.date.value = note.date || '';
   state.mainScripture = note.mainScripture || '';
