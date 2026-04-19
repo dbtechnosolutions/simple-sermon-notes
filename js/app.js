@@ -243,6 +243,13 @@ function loadNoteIntoEditor(id) {
   UI.appTitle.textContent = 'Edit Note';
 
   UI.form.title.value = note.title === 'Untitled Sermon' ? '' : note.title;
+  // Trigger auto-resize for title textarea on load
+  if (UI.form.title) {
+    UI.form.title.style.height = 'auto';
+    setTimeout(() => {
+      UI.form.title.style.height = UI.form.title.scrollHeight + 'px';
+    }, 10); // Small timeout allows DOM to paint the new value before calculating height
+  }
   UI.form.speaker.value = note.speaker || '';
   UI.form.date.value = note.date || '';
   state.mainScripture = note.mainScripture || '';
