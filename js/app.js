@@ -233,12 +233,12 @@ function loadNoteIntoEditor(id) {
     UI.anchorScripture.citationText.textContent = state.mainScripture;
     UI.anchorScripture.body.innerHTML = UI.form.fetchedScriptureText;
     UI.anchorScripture.container.classList.remove('hidden');
-    UI.btnOpenBiblePickerWrapper.classList.add('hidden');
+    UI.btnOpenBiblePickerWrapper.style.display = 'none';
   } else {
     UI.anchorScripture.container.classList.add('hidden');
     UI.anchorScripture.citationText.textContent = '';
     UI.anchorScripture.body.innerHTML = '';
-    UI.btnOpenBiblePickerWrapper.classList.remove('hidden');
+    UI.btnOpenBiblePickerWrapper.style.display = 'flex';
   }
 
   updateSeriesVisibility();
@@ -263,7 +263,7 @@ window.createNewNote = function () {
   UI.anchorScripture.body.innerHTML = '';
   UI.anchorScripture.container.classList.add('collapsed');
   UI.anchorScripture.body.classList.add('hidden');
-  UI.btnOpenBiblePickerWrapper.classList.remove('hidden');
+  UI.btnOpenBiblePickerWrapper.style.display = 'flex';
   
   updateSeriesVisibility();
 
@@ -641,6 +641,7 @@ window.openBiblePicker = function() {
     UI.biblePicker.back = document.getElementById('bible-picker-back');
     UI.biblePicker.breadcrumb = document.getElementById('bible-picker-breadcrumb');
     UI.biblePicker.footer = document.getElementById('bible-picker-footer');
+    UI.biblePicker.selectionHint = document.getElementById('selection-hint');
     
     UI.biblePicker.modal.style.display = 'flex';
     // Small timeout to allow the display:flex to register before CSS transition removes transform
@@ -693,6 +694,7 @@ function renderBibleBooks() {
   biblePickerState.step = 'books';
   updateBreadcrumb();
   UI.biblePicker.footer.classList.add('hidden');
+  updateSelectionHint();
   UI.biblePicker.grid.className = 'bible-grid grid-cols-3';
   UI.biblePicker.grid.innerHTML = '';
   
@@ -714,6 +716,7 @@ function renderBibleChapters(book) {
   biblePickerState.step = 'chapters';
   updateBreadcrumb();
   UI.biblePicker.footer.classList.add('hidden');
+  updateSelectionHint();
   UI.biblePicker.grid.className = 'bible-grid grid-cols-5';
   UI.biblePicker.grid.innerHTML = '';
   
@@ -785,8 +788,20 @@ window.selectVerse = function(verse, numVerses) {
       biblePickerState.endVerse = null;
     }
   } else {
-    biblePickerState.startVerse = verse;
-    biblePickerState.endVerse = null;
+    if (verse > biblePickerState.startVerse) {
+      biblePickerState.endVerse = verse;
+      renderVersesGrid(numVerses);
+      updateFooter();
+      setTimeout(() => {
+         if (biblePickerState.endVerse === verse && UI.biblePicker.modal.classList.contains('hidden') === false) {
+           window.finalizeVerseSelection();
+         }
+      }, 500);
+      return;
+    } else {
+      biblePickerState.startVerse = verse;
+      biblePickerState.endVerse = null;
+    }
   }
   
   renderVersesGrid(numVerses);
@@ -798,6 +813,25 @@ function updateFooter() {
     UI.biblePicker.footer.classList.remove('hidden');
   } else {
     UI.biblePicker.footer.classList.add('hidden');
+  }
+  updateSelectionHint();
+}
+
+function updateSelectionHint() {
+  if (!UI.biblePicker.selectionHint) return;
+  
+  if (biblePickerState.step !== 'verses') {
+    UI.biblePicker.selectionHint.classList.add('hidden');
+    return;
+  }
+  
+  UI.biblePicker.selectionHint.classList.remove('hidden');
+  if (!biblePickerState.startVerse) {
+    UI.biblePicker.selectionHint.textContent = "Tap a verse to begin.";
+  } else if (biblePickerState.startVerse && !biblePickerState.endVerse) {
+    UI.biblePicker.selectionHint.textContent = "Tap another verse to select a range, or tap Done.";
+  } else {
+    UI.biblePicker.selectionHint.textContent = "Range selected. Tap Done to finalize.";
   }
 }
 
@@ -813,7 +847,7 @@ window.finalizeVerseSelection = async function() {
   state.mainScripture = endpoint;
   UI.anchorScripture.citationText.textContent = endpoint;
   UI.anchorScripture.container.classList.remove('hidden');
-  UI.btnOpenBiblePickerWrapper.classList.add('hidden');
+  UI.btnOpenBiblePickerWrapper.style.display = 'none';
   
   UI.anchorScripture.body.innerHTML = `<i class="ph ph-spinner"></i> Fetching ${endpoint}...`;
   UI.anchorScripture.container.classList.remove('collapsed');

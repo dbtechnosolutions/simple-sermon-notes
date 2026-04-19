@@ -710,6 +710,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
   font-size: 1.1rem;
 }
+.selection-hint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.1);
+  border-bottom: 1px solid var(--border-color);
+}
+.selection-hint.hidden {
+  display: none;
+}
 .bible-picker-footer {
   padding: 1rem;
   border-top: 1px solid var(--border-color);
@@ -718,10 +729,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .bible-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 15px;
   display: grid;
-  gap: 0.5rem;
+  gap: 10px;
   align-content: start;
+  width: 100%;
+  box-sizing: border-box;
 }
 .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
@@ -740,6 +753,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
 }
 .grid-item:active {
   transform: scale(0.96);
