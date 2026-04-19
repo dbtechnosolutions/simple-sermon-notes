@@ -41,6 +41,7 @@ const UI = {
   appTitle: document.getElementById('app-title'),
   seriesBtn: document.getElementById('btn-add-series'),
   seriesWrapper: document.getElementById('series-input-wrapper'),
+  btnOpenBiblePickerWrapper: document.getElementById('add-scripture-wrapper'),
   // Anchor Scripture
   anchorScripture: {
     container: document.getElementById('anchor-scripture-container'),
@@ -232,10 +233,12 @@ function loadNoteIntoEditor(id) {
     UI.anchorScripture.citationText.textContent = state.mainScripture;
     UI.anchorScripture.body.innerHTML = UI.form.fetchedScriptureText;
     UI.anchorScripture.container.classList.remove('hidden');
+    UI.btnOpenBiblePickerWrapper.classList.add('hidden');
   } else {
     UI.anchorScripture.container.classList.add('hidden');
     UI.anchorScripture.citationText.textContent = '';
     UI.anchorScripture.body.innerHTML = '';
+    UI.btnOpenBiblePickerWrapper.classList.remove('hidden');
   }
 
   updateSeriesVisibility();
@@ -260,10 +263,16 @@ window.createNewNote = function () {
   UI.anchorScripture.body.innerHTML = '';
   UI.anchorScripture.container.classList.add('collapsed');
   UI.anchorScripture.body.classList.add('hidden');
+  UI.btnOpenBiblePickerWrapper.classList.remove('hidden');
   
   updateSeriesVisibility();
 
   switchView('editor');
+};
+
+window.editScripture = function(event) {
+  event.stopPropagation();
+  window.openBiblePicker();
 };
 
 window.toggleScripture = function() {
@@ -796,6 +805,7 @@ window.finalizeVerseSelection = async function() {
   state.mainScripture = endpoint;
   UI.anchorScripture.citationText.textContent = endpoint;
   UI.anchorScripture.container.classList.remove('hidden');
+  UI.btnOpenBiblePickerWrapper.classList.add('hidden');
   
   UI.anchorScripture.body.innerHTML = `<i class="ph ph-spinner"></i> Fetching ${endpoint}...`;
   UI.anchorScripture.container.classList.remove('collapsed');

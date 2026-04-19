@@ -21,6 +21,25 @@
   <link rel="icon" type="image/png" sizes="512x512" href="./assets/icon-512-v2.png">
 </head>
 <body>
+  <!-- Bible Picker Modal -->
+  <div id="bible-picker-modal" class="modal-overlay hidden">
+    <div class="bible-picker-container">
+      <div class="bible-picker-header">
+        <button type="button" class="btn-icon" onclick="window.biblePickerBack()" id="bible-picker-back">
+          <i class="ph-bold ph-arrow-left"></i>
+        </button>
+        <span id="bible-picker-breadcrumb" class="bible-picker-breadcrumb">Books</span>
+        <button type="button" class="btn-icon" onclick="window.closeBiblePicker()">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+      <div id="bible-picker-grid" class="bible-grid"></div>
+      <div class="bible-picker-footer hidden" id="bible-picker-footer">
+        <button type="button" class="btn-primary full-width" onclick="window.finalizeVerseSelection()">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <header class="top-bar">
       <div class="top-bar-left" style="display: flex; align-items: center; gap: 0.5rem;">
@@ -78,7 +97,7 @@
                   <input type="date" id="note-date">
                 </div>
               </div>
-              <div class="input-group" style="margin-top: 0.5rem;">
+              <div class="input-group" id="add-scripture-wrapper" style="margin-top: 0.5rem;">
                 <button type="button" id="btn-open-bible-picker" class="btn-primary full-width" onclick="window.openBiblePicker()">
                   <i class="ph-bold ph-book-open-text"></i> Add Scripture
                 </button>
@@ -87,7 +106,7 @@
               <div id="anchor-scripture-container" class="scripture-card hidden" style="margin-top: 0.5rem;">
                 <div id="scripture-header" class="scripture-header" onclick="window.toggleScripture()">
                   <div class="scripture-header-left">
-                    <span class="book-icon">📖</span>
+                    <span class="book-icon" onclick="window.editScripture(event)" title="Edit Scripture">📖</span>
                     <span id="citation-text" class="citation-text"></span>
                   </div>
                   <i id="scripture-chevron" class="ph-bold ph-caret-down chevron-icon"></i>
@@ -157,24 +176,6 @@
     </main>
   </div>
 
-  <!-- Bible Picker Modal -->
-  <div id="bible-picker-modal" class="modal-overlay hidden">
-    <div class="bible-picker-container">
-      <div class="bible-picker-header">
-        <button type="button" class="btn-icon" onclick="window.biblePickerBack()" id="bible-picker-back">
-          <i class="ph-bold ph-arrow-left"></i>
-        </button>
-        <span id="bible-picker-breadcrumb" class="bible-picker-breadcrumb">Books</span>
-        <button type="button" class="btn-icon" onclick="window.closeBiblePicker()">
-          <i class="ph-bold ph-x"></i>
-        </button>
-      </div>
-      <div id="bible-picker-grid" class="bible-grid"></div>
-      <div class="bible-picker-footer hidden" id="bible-picker-footer">
-        <button type="button" class="btn-primary full-width" onclick="window.finalizeVerseSelection()">Done</button>
-      </div>
-    </div>
-  </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
