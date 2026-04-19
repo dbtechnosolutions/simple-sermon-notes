@@ -245,10 +245,21 @@ function loadNoteIntoEditor(id) {
   UI.form.title.value = note.title === 'Untitled Sermon' ? '' : note.title;
   // Trigger auto-resize for title textarea on load
   if (UI.form.title) {
+    // Phase 1: Clear and Reset
     UI.form.title.style.height = 'auto';
-    setTimeout(() => {
-      UI.form.title.style.height = UI.form.title.scrollHeight + 'px';
-    }, 10); // Small timeout allows DOM to paint the new value before calculating height
+    
+    // Phase 2: Force calculation on the next animation frame
+    requestAnimationFrame(() => {
+        UI.form.title.style.height = UI.form.title.scrollHeight + 'px';
+        console.log("Title Height Frame 1:", UI.form.title.scrollHeight);
+        
+        // Phase 3: Safety net for mobile (100ms delay)
+        setTimeout(() => {
+            UI.form.title.style.height = 'auto';
+            UI.form.title.style.height = UI.form.title.scrollHeight + 'px';
+            console.log("Title Height Safety Net:", UI.form.title.scrollHeight);
+        }, 100);
+    });
   }
   UI.form.speaker.value = note.speaker || '';
   UI.form.date.value = note.date || '';
