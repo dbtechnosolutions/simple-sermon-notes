@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Secure the sermons collection
+    match /sermons/{sermonId} {
+      // Allow read, update, and delete only if the user is authenticated and owns the document
+      allow read, update, delete: if request.auth != null && resource.data.ownerId == request.auth.uid;
+      
+      // Allow create only if the user is authenticated and sets themselves as the owner
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+    }
+
+    // Keep legacy users path secure just in case, or for migration purposes
+    match /users/{userId}/sermons/{sermonId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

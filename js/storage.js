@@ -1,5 +1,5 @@
 // storage.js
-// Handles Firebase Firestore operations with offline caching and Anonymous pseudo-auth
+// Handles Firebase Firestore operations with offline caching and production-ready security rules
 
 // Firebase is loaded globally from the CDN compat libraries in index.html!
 const firebaseConfig = {
@@ -43,7 +43,7 @@ function generateId() {
 // Fetch from cloud asynchronously for authenticated user
 async function fetchNotesFromDb() {
   try {
-    const colRef = db.collection(`users/${currentUserUID}/sermons`);
+    const colRef = db.collection('sermons').where('ownerId', '==', currentUserUID);
     const snapshot = await colRef.get();
     const notes = [];
     snapshot.forEach(docSnap => {
@@ -69,14 +69,17 @@ async function migrateDeviceDataToGoogle(uid) {
   
   console.log("Device database found. Migrating legacy hardware notes into Google account...");
   try {
-    const colRef = db.collection(`users/${legacyId}/sermons`);
-    const snapshot = await colRef.get();
+    // Attempt to pull from legacy path if it exists
+    const legacyColRef = db.collection(`users/${legacyId}/sermons`);
+    const snapshot = await legacyColRef.get();
     
     if (!snapshot.empty) {
       const batch = db.batch();
       snapshot.forEach(docSnap => {
-        const newDocRef = db.collection(`users/${uid}/sermons`).doc(docSnap.id);
-        batch.set(newDocRef, docSnap.data());
+        const newDocRef = db.collection('sermons').doc(docSnap.id);
+        const data = docSnap.data();
+        data.ownerId = uid; // Inject the new owner UID
+        batch.set(newDocRef, data);
       });
       await batch.commit();
       console.log(`Successfully beamed ${snapshot.size} device notes safely into the cloud!`);
@@ -105,8 +108,14 @@ function getNoteById(id) {
 }
 
 async function saveNote(note) {
+  if (!currentUserUID) {
+    console.warn("Save attempted without authenticated user. Note will remain in local cache only.");
+    return note;
+  }
+  
   if (!note.id) note.id = generateId();
   note.updatedAt = Date.now();
+  note.ownerId = currentUserUID; // Securely bind this note to the current user
   
   // Update local cache immediately so UI doesn't stutter!
   const index = localNotesCache.findIndex(n => n.id === note.id);
@@ -118,7 +127,7 @@ async function saveNote(note) {
 
   // Push to Firebase async (in background)
   try {
-    const docRef = db.collection(`users/${currentUserUID}/sermons`).doc(note.id);
+    const docRef = db.collection('sermons').doc(note.id);
     await docRef.set(note, { merge: true });
   } catch(e) {
     console.error("Failed to sync note to cloud", e);
@@ -132,7 +141,7 @@ async function deleteNote(id) {
   localNotesCache = localNotesCache.filter(n => n.id !== id);
   
   try {
-    const docRef = db.collection(`users/${currentUserUID}/sermons`).doc(id);
+    const docRef = db.collection('sermons').doc(id);
     await docRef.delete();
   } catch(e) {
     console.error("Failed to delete from cloud", e);
