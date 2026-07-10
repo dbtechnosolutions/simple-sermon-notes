@@ -32,7 +32,8 @@ const UI = {
     speaker: document.getElementById('note-speaker'),
     date: document.getElementById('note-date'),
     series: document.getElementById('note-series'),
-    content: document.getElementById('note-content')
+    content: document.getElementById('note-content'),
+    youtube: document.getElementById('note-youtube')
   },
   search: document.getElementById('search-input'),
   notesContainer: document.getElementById('notes-container'),
@@ -231,7 +232,8 @@ function getEditorData() {
     series: UI.form.series.value,
     content: UI.form.content.innerHTML,
     fetchedScriptureText: UI.form.fetchedScriptureText || null,
-    fetchedScriptureMeta: UI.form.fetchedScriptureMeta || null
+    fetchedScriptureMeta: UI.form.fetchedScriptureMeta || null,
+    youtube: UI.form.youtube.value
   };
 }
 
@@ -248,6 +250,7 @@ function loadNoteIntoEditor(id) {
   state.mainScripture = note.mainScripture || '';
   UI.form.series.value = note.series || '';
   UI.form.content.innerHTML = note.content || '';
+  UI.form.youtube.value = note.youtube || '';
 
   UI.form.fetchedScriptureText = note.fetchedScriptureText || null;
   UI.form.fetchedScriptureMeta = note.fetchedScriptureMeta || null;
@@ -282,6 +285,7 @@ window.createNewNote = function () {
   state.mainScripture = '';
   UI.form.series.value = '';
   UI.form.content.innerHTML = '';
+  UI.form.youtube.value = '';
   UI.form.fetchedScriptureText = null;
   UI.form.fetchedScriptureMeta = null;
   
@@ -443,6 +447,9 @@ function createNoteCard(note) {
   }
   if (note.series) {
     meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-violet-900 text-base"></i>${note.series}</span>`;
+  }
+  if (note.youtube) {
+    meta.innerHTML += `<a href="${note.youtube}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="flex items-center gap-1.5 text-violet-900 hover:text-violet-950 transition-colors"><i class="ph-fill ph-youtube-logo text-base"></i>Watch</a>`;
   }
 
   d.appendChild(header);
