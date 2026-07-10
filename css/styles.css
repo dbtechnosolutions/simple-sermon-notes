@@ -56,12 +56,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Rich Text Placeholder pseudo-element */
-.rich-text-editor:empty:before {
+.rich-text-editor:empty:before,
+#note-title:empty:before {
   content: attr(data-placeholder);
   color: #94a3b8; /* slate-400 */
   pointer-events: none;
   display: block;
   white-space: pre-wrap;
+}
+
+#note-title:focus:empty:before {
+  content: "";
 }
 
 /* Auth View Pulse Animation */
