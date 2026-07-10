@@ -31,6 +31,11 @@ db.enablePersistence().catch((err) => {
 const auth = firebase.auth();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+// Handle redirect results for PWA/mobile compatibility
+auth.getRedirectResult().catch((error) => {
+  console.error("Error retrieving redirect sign-in result:", error);
+});
+
 // System variables
 let currentUserUID = null;
 let localNotesCache = [];
@@ -94,8 +99,38 @@ async function migrateDeviceDataToGoogle(uid) {
   }
 }
 
+// Migrate notes from legacy users/{uid}/sermons path to the top-level collection
+async function migrateGoogleLegacyData(uid) {
+  const hasMigrated = localStorage.getItem(`sermon_notes_migrated_to_sermons_collection_${uid}`);
+  if (hasMigrated === 'true') return;
+
+  console.log("Migrating legacy Google-authenticated user notes to secure top-level collection...");
+  try {
+    const legacyColRef = db.collection(`users/${uid}/sermons`);
+    const snapshot = await legacyColRef.get();
+
+    if (!snapshot.empty) {
+      const batch = db.batch();
+      snapshot.forEach(docSnap => {
+        const newDocRef = db.collection('sermons').doc(docSnap.id);
+        const data = docSnap.data();
+        data.ownerId = uid; // Ensure ownerId is injected
+        batch.set(newDocRef, data);
+      });
+      await batch.commit();
+      console.log(`Successfully migrated ${snapshot.size} Google-auth notes to the new collection!`);
+    }
+    localStorage.setItem(`sermon_notes_migrated_to_sermons_collection_${uid}`, 'true');
+  } catch(e) {
+    console.error("Error migrating legacy Google-auth notes:", e);
+  }
+}
+
 // Automatically bind to the loading flow
 window.InitializeStorageBackend = async function() {
+  if (currentUserUID) {
+    await migrateGoogleLegacyData(currentUserUID);
+  }
   await fetchNotesFromDb();
 }
 
@@ -151,7 +186,20 @@ async function deleteNote(id) {
 // --- Auth Helpers (Exposed) ---
 
 window.SignInWithGoogle = () => {
-  return auth.signInWithPopup(googleProvider);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  
+  if (isIOS || isStandalone) {
+    return auth.signInWithRedirect(googleProvider);
+  } else {
+    return auth.signInWithPopup(googleProvider).catch((error) => {
+      // Fallback if popup is blocked (e.g. browser security settings)
+      if (error.code === 'auth/popup-blocked') {
+        return auth.signInWithRedirect(googleProvider);
+      }
+      throw error;
+    });
+  }
 };
 
 window.SignOutFromGoogle = () => {

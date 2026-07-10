@@ -276,7 +276,7 @@ window.createNewNote = function () {
   UI.appTitle.textContent = 'New Note';
 
   // Clear forms
-  UI.form.title.value = '';
+  UI.form.title.innerText = '';
   UI.form.speaker.value = '';
   UI.form.date.value = new Date().toISOString().split('T')[0];
   state.mainScripture = '';
@@ -345,7 +345,7 @@ function showSaveIndicator() {
 
 async function performSave() {
   // If absolutely nothing is entered beyond defaults, we don't save.
-  const isEssentiallyEmpty = !UI.form.title.value && !UI.form.speaker.value && !state.mainScripture && !(UI.form.content.textContent || '').trim() && !UI.form.series.value;
+  const isEssentiallyEmpty = !(UI.form.title.innerText || '').trim() && !UI.form.speaker.value && !state.mainScripture && !(UI.form.content.textContent || '').trim() && !UI.form.series.value;
 
   if (isEssentiallyEmpty && !state.currentNoteId) return;
 
