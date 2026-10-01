@@ -5,12 +5,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* iOS Safari natively scrolls the whole page to keep a focused
-   contenteditable visible above the on-screen keyboard, regardless of
-   h-screen/overflow-hidden on descendants - which pushes the fixed header
-   off the top of the screen while typing. Locking html/body from scrolling
-   at all removes that scroll container, so the OS has nothing to move;
-   every real scroll region in this app already has its own
+/* Mobile browsers (iOS Safari, Android Chrome/Samsung Internet) can
+   natively scroll the whole page to keep a focused contenteditable
+   visible above the on-screen keyboard, regardless of h-screen/
+   overflow-hidden on descendants - which pushes the fixed header off
+   the top of the screen while typing. Locking html/body from scrolling
+   at all removes that scroll container, so there's nothing for the OS
+   to move; every real scroll region in this app already has its own
    overflow-y-auto (note body, notes list). */
 html, body {
   position: fixed;
