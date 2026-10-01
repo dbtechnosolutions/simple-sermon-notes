@@ -359,6 +359,33 @@ window.goBackToList = function () {
   switchView('list');
 };
 
+// Custom confirm dialog - native confirm() on an installed PWA shows the
+// raw hosting domain ("dbtechnosolutions.github.io says...") as part of
+// the browser's own chrome, which can't be styled, reworded, or removed.
+function showConfirmDialog(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirm-modal');
+    const messageEl = document.getElementById('confirm-modal-message');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+
+    messageEl.textContent = message;
+    modal.classList.remove('hidden');
+
+    function cleanup(result) {
+      modal.classList.add('hidden');
+      cancelBtn.removeEventListener('click', onCancel);
+      confirmBtn.removeEventListener('click', onConfirm);
+      resolve(result);
+    }
+    function onCancel() { cleanup(false); }
+    function onConfirm() { cleanup(true); }
+
+    cancelBtn.addEventListener('click', onCancel);
+    confirmBtn.addEventListener('click', onConfirm);
+  });
+}
+
 window.deleteCurrentNote = async function () {
   if (!state.currentNoteId) {
     // Note hasn't even been auto-saved for the first time yet
@@ -366,7 +393,7 @@ window.deleteCurrentNote = async function () {
     return;
   }
 
-  if (confirm("Are you sure you want to completely delete this note? This cannot be undone.")) {
+  if (await showConfirmDialog("Are you sure you want to completely delete this note? This cannot be undone.")) {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
     try {
       await Storage.deleteNote(state.currentNoteId);
@@ -518,7 +545,7 @@ function formatDate(dateStr) {
 
 window.deleteSermon = async function (e, id) {
   e.stopPropagation();
-  if (confirm('Are you sure you want to delete this sermon?')) {
+  if (await showConfirmDialog('Are you sure you want to delete this sermon?')) {
     try {
       await Storage.deleteNote(id);
     } catch (err) {
