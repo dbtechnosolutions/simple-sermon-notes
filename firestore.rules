@@ -12,10 +12,8 @@ service cloud.firestore {
 
     // Keep legacy users path secure and accessible for migration
     match /users/{userId}/sermons/{sermonId} {
-      // Allow authenticated users to read (needed to fetch device-local or legacy notes for migration)
-      allow read: if request.auth != null;
-      // Allow write only for the matching user
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow read/write only for the matching user
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

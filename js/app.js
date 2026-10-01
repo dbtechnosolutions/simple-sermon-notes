@@ -24,7 +24,6 @@ const UI = {
     backBtn: document.getElementById('btn-back-sermons'),
     newNoteBtn: document.getElementById('btn-new-note'),
     deleteBtn: document.getElementById('btn-delete-note'),
-    finalizeBtn: document.getElementById('btn-finalize-note'),
     logoutBtn: document.getElementById('btn-logout')
   },
   form: {
@@ -89,11 +88,41 @@ document.addEventListener('selectionchange', () => {
   }
 });
 
+// On mobile, the on-screen keyboard shrinks the *visual* viewport without
+// shrinking the *layout* viewport (especially iOS Safari), so a toolbar
+// pinned to the bottom of the page ends up hidden behind the keyboard.
+// Track visualViewport and slide the toolbar up to sit just above the
+// keyboard instead - the same way native text-input accessory bars behave.
+if (window.visualViewport) {
+  const editorToolbar = document.getElementById('editor-toolbar');
+  const adjustToolbarForKeyboard = () => {
+    if (!editorToolbar) return;
+    const vv = window.visualViewport;
+    const keyboardOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    editorToolbar.style.transform = keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : '';
+  };
+  window.visualViewport.addEventListener('resize', adjustToolbarForKeyboard);
+  window.visualViewport.addEventListener('scroll', adjustToolbarForKeyboard);
+}
+
 UI.form.content.addEventListener('paste', function (e) {
   e.preventDefault();
   const text = (e.originalEvent || e).clipboardData.getData('text/plain');
   document.execCommand('insertText', false, text);
 });
+
+// Chrome (and others) can leave a stray <br> behind after backspacing out
+// all typed text in a contenteditable, which breaks the CSS :empty selector
+// the placeholder depends on - leaving a blank box with no "Start typing..."
+// hint. Force it back to truly empty whenever there's no real text content.
+function normalizeEmptyContentEditable(el) {
+  if ((el.textContent || '').trim() === '' && el.innerHTML !== '') {
+    el.innerHTML = '';
+  }
+}
+
+UI.form.content.addEventListener('input', () => normalizeEmptyContentEditable(UI.form.content));
+UI.form.title.addEventListener('input', () => normalizeEmptyContentEditable(UI.form.title));
 
 // Auto-capitalize specific deity words dynamically
 const DEITY_WORDS = ["god", "jesus", "him", "lord"];
@@ -112,6 +141,15 @@ UI.form.content.addEventListener('input', (e) => {
   }
 
   if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') return;
+
+  // Only check once a word has actually been completed (the just-typed
+  // character is a boundary char like space/punctuation/newline). Running
+  // this on every keystroke capitalizes words prematurely - e.g. typing
+  // "himself" gets capitalized to "Himself" the instant "him" is typed,
+  // before the rest of the word is even there.
+  const insertedChar = e.data;
+  const completesWord = insertedChar == null || /[^a-zA-Z0-9]/.test(insertedChar);
+  if (!completesWord) return;
 
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
@@ -171,7 +209,6 @@ function switchView(viewName) {
 
     // Hide editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'none';
-    if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'none';
 
     renderNotesList();
   } else if (viewName === 'editor') {
@@ -183,7 +220,6 @@ function switchView(viewName) {
 
     // Show editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'block';
-    if (UI.topBar.finalizeBtn) UI.topBar.finalizeBtn.style.display = 'block';
 
     if (typeof updateDynamicAutocompletes === 'function') updateDynamicAutocompletes();
   }
@@ -318,9 +354,8 @@ window.toggleScripture = function() {
   }
 };
 
-window.finalizeNote = function () {
-  if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-  performSave();
+window.goBackToList = function () {
+  flushPendingSave();
   switchView('list');
 };
 
@@ -333,7 +368,12 @@ window.deleteCurrentNote = async function () {
 
   if (confirm("Are you sure you want to completely delete this note? This cannot be undone.")) {
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-    await Storage.deleteNote(state.currentNoteId);
+    try {
+      await Storage.deleteNote(state.currentNoteId);
+    } catch (e) {
+      alert("Failed to delete this note. Please check your connection and try again.");
+      return;
+    }
     state.currentNoteId = null;
     switchView('list');
   }
@@ -342,9 +382,37 @@ window.deleteCurrentNote = async function () {
 // --- Auto-Save Mechanism ---
 let autoSaveTimeout = null;
 
+// Backs off retry attempts on repeated failure (5s, 10s, 20s... capped at
+// 60s) so a persistently-broken save doesn't hammer Firestore forever.
+// Resets to the base delay on any successful save or fresh user input.
+const SAVE_RETRY_BASE_DELAY = 5000;
+const SAVE_RETRY_MAX_DELAY = 60000;
+let saveRetryDelay = SAVE_RETRY_BASE_DELAY;
+let consecutiveSaveFailures = 0;
+
 function showSaveIndicator() {
-  UI.saveIndicator.classList.add('visible');
-  setTimeout(() => UI.saveIndicator.classList.remove('visible'), 2000);
+  UI.saveIndicator.textContent = 'Saved';
+  UI.saveIndicator.classList.remove('text-red-500', 'opacity-0');
+  UI.saveIndicator.classList.add('text-slate-500', 'opacity-100');
+  setTimeout(() => {
+    UI.saveIndicator.classList.remove('opacity-100');
+    UI.saveIndicator.classList.add('opacity-0');
+  }, 2000);
+  saveRetryDelay = SAVE_RETRY_BASE_DELAY;
+  consecutiveSaveFailures = 0;
+}
+
+// Unlike showSaveIndicator, this does NOT auto-hide - a failed save must
+// stay visible until a retry actually succeeds. Silently failing is exactly
+// what this app exists to prevent. The message escalates after repeated
+// failures so a genuinely stuck save (not just a brief network blip) reads
+// differently than a normal transient retry.
+function showSaveError() {
+  UI.saveIndicator.textContent = consecutiveSaveFailures >= 3
+    ? 'Not saved - check your connection'
+    : 'Not saved - retrying...';
+  UI.saveIndicator.classList.remove('text-slate-500', 'opacity-0');
+  UI.saveIndicator.classList.add('text-red-500', 'opacity-100');
 }
 
 async function performSave() {
@@ -361,9 +429,20 @@ async function performSave() {
 
   const data = getEditorData();
 
-  const savedNote = await Storage.saveNote(data);
-  state.currentNoteId = savedNote.id;
-  showSaveIndicator();
+  try {
+    const savedNote = await Storage.saveNote(data);
+    state.currentNoteId = savedNote.id;
+    showSaveIndicator();
+  } catch (e) {
+    console.error('Autosave failed, will retry:', e);
+    consecutiveSaveFailures++;
+    showSaveError();
+    // Keep retrying - a note must never just silently stop saving - but
+    // back off so a persistent failure doesn't spam Firestore forever.
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(performSave, saveRetryDelay);
+    saveRetryDelay = Math.min(saveRetryDelay * 2, SAVE_RETRY_MAX_DELAY);
+  }
 }
 
 function triggerAutoSave() {
@@ -373,6 +452,28 @@ function triggerAutoSave() {
   }, 1000); // 1s debounce
 }
 
+// Forces an immediate save, bypassing the debounce. Must be called by every
+// path that can leave the editor (back button, app backgrounded, tab/app
+// closed) - otherwise up to 1s of typing can be silently lost.
+function flushPendingSave() {
+  if (state.activeView !== 'editor') return;
+  if (autoSaveTimeout) {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = null;
+  }
+  performSave();
+}
+
+// Catch app backgrounding / tab close / OS reclaiming the page - the
+// debounce timer alone can't protect against these since they don't wait
+// for it to fire.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    flushPendingSave();
+  }
+});
+window.addEventListener('pagehide', flushPendingSave);
+
 // Bind auto-save to inputs
 Object.values(UI.form).forEach(input => {
   input.addEventListener('input', triggerAutoSave);
@@ -380,6 +481,26 @@ Object.values(UI.form).forEach(input => {
 });
 
 // --- History List Rendering ---
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+// Only allow http/https links through to an href, blocking javascript: and other schemes
+function getSafeHttpUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch (e) {
+    // Malformed URL
+  }
+  return null;
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -398,7 +519,12 @@ function formatDate(dateStr) {
 window.deleteSermon = async function (e, id) {
   e.stopPropagation();
   if (confirm('Are you sure you want to delete this sermon?')) {
-    await Storage.deleteNote(id);
+    try {
+      await Storage.deleteNote(id);
+    } catch (err) {
+      alert("Failed to delete this sermon. Please check your connection and try again.");
+      return;
+    }
     if (state.currentNoteId === id) {
       state.currentNoteId = null;
     }
@@ -425,7 +551,7 @@ function createNoteCard(note) {
   title.textContent = note.title;
 
   const delBtn = document.createElement('button');
-  delBtn.className = 'text-slate-300 hover:text-red-500 transition-colors p-1 -mt-1 -mr-1 flex items-center justify-center';
+  delBtn.className = 'text-slate-300 hover:text-red-500 transition-colors p-3 -mt-3 -mr-3 flex items-center justify-center';
   delBtn.title = 'Delete Sermon';
   delBtn.innerHTML = '<i class="ph-bold ph-trash text-[1.3rem]"></i>';
   delBtn.onclick = (e) => window.deleteSermon(e, note.id);
@@ -440,16 +566,17 @@ function createNoteCard(note) {
     meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-calendar-blank text-violet-900 text-base"></i>${formatDate(note.date)}</span>`;
   }
   if (note.speaker) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-user text-violet-900 text-base"></i>${note.speaker}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-user text-violet-900 text-base"></i>${escapeHtml(note.speaker)}</span>`;
   }
   if (note.mainScripture) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-book-open-text text-violet-900 text-base"></i>${note.mainScripture}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-book-open-text text-violet-900 text-base"></i>${escapeHtml(note.mainScripture)}</span>`;
   }
   if (note.series) {
-    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-violet-900 text-base"></i>${note.series}</span>`;
+    meta.innerHTML += `<span class="flex items-center gap-1.5"><i class="ph ph-books text-violet-900 text-base"></i>${escapeHtml(note.series)}</span>`;
   }
-  if (note.youtube) {
-    meta.innerHTML += `<a href="${note.youtube}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="flex items-center gap-1.5 text-violet-900 hover:text-violet-950 transition-colors"><i class="ph-fill ph-youtube-logo text-base"></i>Watch</a>`;
+  const safeYoutubeUrl = getSafeHttpUrl(note.youtube);
+  if (safeYoutubeUrl) {
+    meta.innerHTML += `<a href="${escapeHtml(safeYoutubeUrl)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" class="flex items-center gap-1.5 text-violet-900 hover:text-violet-950 transition-colors"><i class="ph-fill ph-youtube-logo text-base"></i>Watch</a>`;
   }
 
   d.appendChild(header);
@@ -673,8 +800,47 @@ let biblePickerState = {
   endVerse: null
 };
 
+// Parses "Book Chapter:Start" or "Book Chapter:Start-End" (e.g. "John 3:16"
+// or "1 John 3:16-18") back into its parts, validating the book/chapter/verse
+// against the real bibleData counts. Returns null if it doesn't parse or
+// doesn't check out.
+function parseScriptureReference(ref) {
+  if (!ref) return null;
+  const match = ref.trim().match(/^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/);
+  if (!match) return null;
+
+  const [, rawBook, chapterStr, startStr, endStr] = match;
+  const bookKey = Object.keys(bibleData).find(
+    b => b.toLowerCase() === rawBook.trim().toLowerCase()
+  );
+  if (!bookKey) return null;
+
+  const chapter = parseInt(chapterStr, 10);
+  const startVerse = parseInt(startStr, 10);
+  const endVerse = endStr ? parseInt(endStr, 10) : null;
+
+  const numChapters = bibleData[bookKey].length;
+  if (chapter < 1 || chapter > numChapters) return null;
+  const numVerses = bibleData[bookKey][chapter - 1];
+  if (startVerse < 1 || startVerse > numVerses) return null;
+  if (endVerse && (endVerse < startVerse || endVerse > numVerses)) return null;
+
+  return { book: bookKey, chapter, startVerse, endVerse };
+}
+
 window.openBiblePicker = function() {
-  biblePickerState = { step: 'books', book: null, chapter: null, startVerse: null, endVerse: null };
+  // The starting verse is usually known the moment the pastor announces it,
+  // but the stopping verse isn't known until the reading actually stops -
+  // so editing an EXISTING citation should resume straight at that chapter's
+  // verse grid (with the start verse already marked) instead of forcing a
+  // full re-navigation through Books -> Chapter -> Verses.
+  const existing = parseScriptureReference(state.mainScripture);
+  if (existing) {
+    biblePickerState = { step: 'verses', book: existing.book, chapter: existing.chapter, startVerse: existing.startVerse, endVerse: existing.endVerse };
+  } else {
+    biblePickerState = { step: 'books', book: null, chapter: null, startVerse: null, endVerse: null };
+  }
+
   const modal = document.getElementById('bible-picker-modal');
   if (modal) {
     // Re-initialize mapped elements to be safe against load-order issues
@@ -684,13 +850,18 @@ window.openBiblePicker = function() {
     UI.biblePicker.breadcrumb = document.getElementById('bible-picker-breadcrumb');
     UI.biblePicker.footer = document.getElementById('bible-picker-footer');
     UI.biblePicker.selectionHint = document.getElementById('selection-hint');
-    
+
     UI.biblePicker.modal.style.display = 'flex';
     // Small timeout to allow the display:flex to register before CSS transition removes transform
     setTimeout(() => {
       UI.biblePicker.modal.classList.remove('hidden');
     }, 10);
-    renderBibleBooks();
+
+    if (existing) {
+      renderBibleVerses(existing.book, existing.chapter);
+    } else {
+      renderBibleBooks();
+    }
   } else {
     console.error("Bible Picker Modal not found in DOM.");
   }
@@ -902,7 +1073,7 @@ window.finalizeVerseSelection = async function() {
     
     let versesHtml = '';
     data.verses.forEach(v => {
-       versesHtml += `<sup class="v-num" contenteditable="false">${v.verse}</sup>${v.text.trim()} `;
+       versesHtml += `<sup class="v-num" contenteditable="false">${escapeHtml(v.verse)}</sup>${escapeHtml(v.text.trim())} `;
     });
     
     UI.anchorScripture.body.innerHTML = versesHtml;

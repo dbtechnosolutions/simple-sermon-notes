@@ -70,8 +70,8 @@
   <div id="app-container" class="max-w-[600px] mx-auto h-screen flex flex-col overflow-hidden bg-slate-50 relative">
     <header class="bg-white border-b border-slate-200 flex justify-between items-center px-4 py-3 shrink-0">
       <div class="flex items-center gap-2">
-        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-back-sermons"
-          onclick="switchView('list')" title="Back to Sermons" style="display: none;">
+        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-3" id="btn-back-sermons"
+          onclick="window.goBackToList()" title="Back to Sermons" style="display: none;">
           <i class="ph-bold ph-arrow-left text-xl"></i>
         </button>
         <h1 id="app-title" class="text-xl font-semibold text-slate-900">New Note</h1>
@@ -79,19 +79,15 @@
       <div class="flex items-center gap-3">
         <span class="save-indicator text-xs text-slate-500 opacity-0 transition-opacity"
           id="save-indicator">Saved</span>
-        <button class="btn-icon text-slate-400 hover:text-red-500 transition-colors p-1" id="btn-delete-note"
+        <button class="btn-icon text-slate-400 hover:text-red-500 transition-colors p-3" id="btn-delete-note"
           onclick="deleteCurrentNote()" title="Delete Note" style="display: none;">
           <i class="ph-bold ph-trash text-xl"></i>
         </button>
-        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-finalize-note"
-          onclick="finalizeNote()" title="Finalize Note" style="display: none;">
-          <i class="ph-fill ph-check-circle text-xl"></i>
-        </button>
-        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-1" id="btn-new-note"
+        <button class="btn-icon text-slate-400 hover:text-violet-900 transition-colors p-3" id="btn-new-note"
           onclick="createNewNote()" title="Start New Note">
           <i class="ph-bold ph-plus text-xl"></i>
         </button>
-        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-1" id="btn-logout"
+        <button class="btn-icon text-slate-400 hover:text-slate-900 transition-colors p-3" id="btn-logout"
           onclick="window.signOutAction()" title="Sign Out">
           <i class="ph-bold ph-sign-out text-xl"></i>
         </button>

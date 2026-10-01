@@ -144,8 +144,8 @@ function getNoteById(id) {
 
 async function saveNote(note) {
   if (!currentUserUID) {
-    console.warn("Save attempted without authenticated user. Note will remain in local cache only.");
-    return note;
+    console.warn("Save attempted without authenticated user. Note was NOT saved.");
+    throw new Error('Not signed in - note was not saved to the cloud.');
   }
   
   if (!note.id) note.id = generateId();
@@ -173,14 +173,19 @@ async function saveNote(note) {
 }
 
 async function deleteNote(id) {
-  localNotesCache = localNotesCache.filter(n => n.id !== id);
-  
+  // Only remove from the local cache once the server delete actually
+  // succeeds - otherwise a failed delete looks identical to a successful
+  // one (note vanishes from the UI) but reappears next time notes are
+  // fetched, since it was never actually removed server-side.
   try {
     const docRef = db.collection('sermons').doc(id);
     await docRef.delete();
   } catch(e) {
     console.error("Failed to delete from cloud", e);
+    throw e;
   }
+
+  localNotesCache = localNotesCache.filter(n => n.id !== id);
 }
 
 // --- Auth Helpers (Exposed) ---
