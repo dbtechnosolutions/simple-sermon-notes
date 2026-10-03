@@ -104,6 +104,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .rich-text-editor ol ol { list-style: lower-alpha; }
 .rich-text-editor li { margin: 0.125rem 0; }
 
+/* Scripture inserted inline from the toolbar's scripture button */
+.rich-text-editor .note-scripture {
+  color: #475569; /* slate-600 */
+  border-left: 3px solid #ddd6fe; /* violet-200 */
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+}
+.rich-text-editor .note-scripture sup {
+  color: #94a3b8; /* slate-400 */
+  font-size: 0.7em;
+  margin-right: 0.15rem;
+}
+.rich-text-editor .note-scripture-ref {
+  font-style: normal;
+  font-weight: 500;
+  color: #4c1d95; /* violet-900 */
+  white-space: nowrap;
+}
+
 /* Injected Scripture Block */
 /* Used dynamically by execCommand insertHTML during Bible Picker selection */
 .scripture-block {

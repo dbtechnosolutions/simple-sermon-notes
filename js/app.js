@@ -151,6 +151,9 @@ UI.form.content.addEventListener('input', (e) => {
   const range = sel.getRangeAt(0);
   const node = range.startContainer;
 
+  // Never alter quoted scripture (KJV "believeth in him" must stay as written).
+  if (node.parentElement && node.parentElement.closest('.note-scripture')) return;
+
   if (node.nodeType === Node.TEXT_NODE) {
     let text = node.nodeValue;
     let modified = false;
@@ -1163,5 +1166,255 @@ window.finalizeVerseSelection = async function() {
     UI.anchorScripture.body.innerHTML = `<span style="color:red">Failed to fetch scripture. Please try again.</span>`;
   }
 };
+
+// --- Inline Scripture Insert ---
+// Type a reference the way you'd jot it down mid-sermon ("jn 3:16",
+// "1 cor 13:4-7") and drop the verse text into the note at the cursor.
+
+const normalizeBookKey = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const BOOK_ALIASES = {
+  ex: 'Exodus', dt: 'Deuteronomy', jdg: 'Judges', ps: 'Psalms', psa: 'Psalms', pss: 'Psalms',
+  psalm: 'Psalms', pr: 'Proverbs', prv: 'Proverbs', qoh: 'Ecclesiastes', sos: 'Song of Solomon',
+  ss: 'Song of Solomon', songofsongs: 'Song of Solomon', canticles: 'Song of Solomon',
+  ob: 'Obadiah', mt: 'Matthew', mk: 'Mark', mrk: 'Mark', lk: 'Luke', jn: 'John', jhn: 'John',
+  rm: 'Romans', php: 'Philippians', phlm: 'Philemon', jas: 'James', jm: 'James',
+  revelations: 'Revelation',
+  '1jn': '1 John', '2jn': '2 John', '3jn': '3 John', '1jhn': '1 John', '2jhn': '2 John', '3jhn': '3 John',
+  '1kgs': '1 Kings', '2kgs': '2 Kings', '1pt': '1 Peter', '2pt': '2 Peter',
+};
+
+const ORDINAL_PREFIXES = { '1': '1', '2': '2', '3': '3', '1st': '1', '2nd': '2', '3rd': '3',
+  first: '1', second: '2', third: '3', i: '1', ii: '2', iii: '3' };
+
+// Splits "1 cor" / "first corinthians" / "ii tim" into a lookup key like "1cor".
+function bookQueryKey(raw) {
+  const m = raw.trim().toLowerCase().match(/^(1st|2nd|3rd|first|second|third|[123]|iii|ii|i(?=\s))\s*(.*)$/);
+  if (m && ORDINAL_PREFIXES[m[1]] && m[2]) return ORDINAL_PREFIXES[m[1]] + normalizeBookKey(m[2]);
+  return normalizeBookKey(raw);
+}
+
+// All books whose name starts with what's been typed, in canonical order.
+function matchBooks(raw) {
+  const key = bookQueryKey(raw);
+  if (!key) return [];
+  const books = Object.keys(bibleData);
+  const exact = books.find((b) => normalizeBookKey(b) === key) || BOOK_ALIASES[key];
+  const prefixed = books.filter((b) => normalizeBookKey(b).startsWith(key));
+  return exact ? [exact, ...prefixed.filter((b) => b !== exact)] : prefixed;
+}
+
+// Returns { book, chapter, start, end, label } for a complete, valid reference, or null.
+function parseInlineReference(input) {
+  const m = input.trim().replace(/\s+/g, ' ')
+    .match(/^(.*?[a-z])\.?\s*(\d+)\s*[:.\s]\s*(\d+)(?:\s*[-–]\s*(\d+))?$/i);
+  if (!m) return null;
+  const book = matchBooks(m[1])[0];
+  if (!book) return null;
+
+  const chapter = parseInt(m[2], 10);
+  const start = parseInt(m[3], 10);
+  const end = m[4] ? parseInt(m[4], 10) : null;
+  const verseCounts = bibleData[book];
+  if (chapter < 1 || chapter > verseCounts.length) return null;
+  const maxVerse = verseCounts[chapter - 1];
+  if (start < 1 || start > maxVerse) return null;
+  if (end !== null && (end <= start || end > maxVerse)) return null;
+
+  const label = `${book} ${chapter}:${start}${end ? '-' + end : ''}`;
+  return { book, chapter, start, end, label };
+}
+
+const scriptureInsert = {
+  panel: document.getElementById('scripture-insert'),
+  input: document.getElementById('scripture-insert-input'),
+  goBtn: document.getElementById('scripture-insert-go'),
+  suggestions: document.getElementById('scripture-insert-suggestions'),
+  status: document.getElementById('scripture-insert-status'),
+  savedRange: null,
+  busy: false,
+};
+
+function openScriptureInsert() {
+  // Remember where the cursor was in the note - focusing the reference box
+  // below moves the selection out of the editor.
+  const sel = window.getSelection();
+  scriptureInsert.savedRange = (sel.rangeCount && UI.form.content.contains(sel.getRangeAt(0).startContainer))
+    ? sel.getRangeAt(0).cloneRange()
+    : null;
+
+  scriptureInsert.input.value = '';
+  scriptureInsert.status.textContent = '';
+  updateScriptureInsertUI();
+  scriptureInsert.panel.classList.remove('hidden');
+  scriptureInsert.input.focus();
+}
+
+function closeScriptureInsert(returnFocus) {
+  scriptureInsert.panel.classList.add('hidden');
+  if (returnFocus) restoreEditorCursor();
+}
+
+function restoreEditorCursor() {
+  UI.form.content.focus();
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  if (scriptureInsert.savedRange) {
+    sel.addRange(scriptureInsert.savedRange);
+  } else {
+    // No prior cursor in the note - insert at the end.
+    const range = document.createRange();
+    range.selectNodeContents(UI.form.content);
+    range.collapse(false);
+    sel.addRange(range);
+  }
+}
+
+function updateScriptureInsertUI() {
+  const value = scriptureInsert.input.value;
+  const ref = parseInlineReference(value);
+  scriptureInsert.goBtn.disabled = !ref || scriptureInsert.busy;
+
+  // Suggest book names while the book part is still being typed.
+  scriptureInsert.suggestions.innerHTML = '';
+  const bookPart = value.match(/^(.*?[a-z])\.?\s*$/i);
+  if (!ref && bookPart) {
+    matchBooks(bookPart[1]).slice(0, 5).forEach((book) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-full px-3 py-1';
+      chip.textContent = book;
+      chip.addEventListener('click', () => {
+        scriptureInsert.input.value = book + ' ';
+        scriptureInsert.input.focus();
+        updateScriptureInsertUI();
+      });
+      scriptureInsert.suggestions.appendChild(chip);
+    });
+  }
+
+  if (!scriptureInsert.busy) {
+    if (ref) {
+      scriptureInsert.status.textContent = `Insert ${ref.label}`;
+    } else if (/^.*?[a-z]\.?\s*\d+\s*$/i.test(value)) {
+      scriptureInsert.status.textContent = 'Add a verse, e.g. Psalms 23:1';
+    } else {
+      scriptureInsert.status.textContent = '';
+    }
+  }
+}
+
+// Tapping back into the note means they've moved on - get the box out of the way.
+UI.form.content.addEventListener('focus', () => {
+  if (!scriptureInsert.panel.classList.contains('hidden') && !scriptureInsert.busy) {
+    closeScriptureInsert(false);
+  }
+});
+
+async function submitScriptureInsert() {
+  const ref = parseInlineReference(scriptureInsert.input.value);
+  if (!ref || scriptureInsert.busy) return;
+
+  scriptureInsert.busy = true;
+  scriptureInsert.goBtn.disabled = true;
+  scriptureInsert.status.textContent = `Loading ${ref.label}...`;
+
+  let innerHtml;
+  try {
+    const response = await fetch(`https://bible-api.com/${encodeURIComponent(ref.label)}?translation=kjv`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const verses = data.verses || [];
+    const text = verses.length === 1
+      ? escapeHtml(verses[0].text.trim())
+      : verses.map((v) => `<sup>${escapeHtml(v.verse)}</sup>${escapeHtml(v.text.trim())}`).join(' ');
+    innerHtml = `<i>${text}</i> <span class="note-scripture-ref">— ${escapeHtml(ref.label)} KJV</span>`;
+  } catch (e) {
+    console.error('Inline scripture fetch failed', e);
+    // Still keep what was typed, so it can be looked up later - same as
+    // jotting the reference down by hand.
+    innerHtml = `<span class="note-scripture-ref">${escapeHtml(ref.label)}</span>`;
+  }
+
+  scriptureInsert.busy = false;
+  closeScriptureInsert(false);
+  restoreEditorCursor();
+  insertScriptureBlock(innerHtml);
+}
+
+// Places the scripture on its own line after the line the cursor is on, then
+// moves the cursor to a fresh line below it. Done by hand rather than with
+// execCommand('insertHTML'), which in Chrome merges an inserted block into
+// the current line and strips its class.
+function insertScriptureBlock(innerHtml) {
+  const content = UI.form.content;
+  const sel = window.getSelection();
+  const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+  const caretNode = range && content.contains(range.startContainer) ? range.startContainer : null;
+
+  const block = document.createElement('div');
+  block.className = 'note-scripture';
+  block.innerHTML = innerHtml;
+
+  const caret = document.createRange();
+  const caretEl = caretNode && (caretNode.nodeType === Node.ELEMENT_NODE ? caretNode : caretNode.parentElement);
+  const listItem = caretEl && caretEl.closest('li');
+
+  if (listItem && content.contains(listItem)) {
+    // Inside a bullet: keep the scripture with that bullet, then continue on a
+    // new bullet. (Chrome won't rest the cursor after a block inside an <li> -
+    // it snaps into the quote, so typing would land inside the scripture.)
+    listItem.appendChild(block);
+    const nextItem = document.createElement('li');
+    nextItem.appendChild(document.createElement('br'));
+    listItem.after(nextItem);
+    caret.setStart(nextItem, 0);
+  } else {
+    // Find the editor's top-level line the cursor is on.
+    let line = caretNode;
+    if (line === content) {
+      line = content.childNodes[range.startOffset - 1] || null;
+    }
+    while (line && line.parentNode !== content) line = line.parentNode;
+
+    const next = document.createElement('div');
+    next.appendChild(document.createElement('br'));
+
+    const lineIsEmpty = line && line.nodeType === Node.ELEMENT_NODE
+      && line.textContent.trim() === '' && !line.querySelector('li, img');
+    if (lineIsEmpty) {
+      content.replaceChild(block, line);
+    } else if (line) {
+      line.after(block);
+    } else {
+      content.appendChild(block);
+    }
+    block.after(next);
+    caret.setStart(next, 0);
+  }
+
+  caret.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(caret);
+  // Programmatic DOM changes don't fire input events - trigger autosave.
+  content.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+document.getElementById('btn-scripture-insert').addEventListener('pointerdown', (e) => {
+  // Keep the editor's selection intact so we know where to insert.
+  e.preventDefault();
+});
+document.getElementById('btn-scripture-insert').addEventListener('click', openScriptureInsert);
+document.getElementById('scripture-insert-close').addEventListener('click', () => closeScriptureInsert(true));
+scriptureInsert.goBtn.addEventListener('click', submitScriptureInsert);
+scriptureInsert.input.addEventListener('input', updateScriptureInsertUI);
+scriptureInsert.input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitScriptureInsert();
+  } else if (e.key === 'Escape') {
+    closeScriptureInsert(true);
+  }
+});
 
 
