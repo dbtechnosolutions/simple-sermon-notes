@@ -19,7 +19,10 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 // Enable Offline Data persistence (handles dead zones in church)
-db.enablePersistence().catch((err) => {
+let persistenceEnabled = false;
+db.enablePersistence().then(() => {
+  persistenceEnabled = true;
+}).catch((err) => {
   if (err.code == 'failed-precondition') {
     console.error("Multiple tabs open, offline persistence can only be enabled in one tab at a time.");
   } else if (err.code == 'unimplemented') {
@@ -220,6 +223,7 @@ window.Storage = {
   deleteNote,
   generateId,
   migrateDeviceDataToGoogle,
+  isPersistenceEnabled: () => persistenceEnabled,
   setUserUID: (uid) => { currentUserUID = uid; },
   clearCache: () => { localNotesCache = []; }
 };

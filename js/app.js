@@ -417,16 +417,52 @@ const SAVE_RETRY_MAX_DELAY = 60000;
 let saveRetryDelay = SAVE_RETRY_BASE_DELAY;
 let consecutiveSaveFailures = 0;
 
+// Firestore's save promise only resolves once the SERVER confirms the write.
+// Offline, the write is already safe in the on-device queue but the promise
+// stays pending until reconnect - so without this, an offline save showed
+// nothing at all. If the server hasn't confirmed within this window, say it's
+// saved on the device instead.
+const SERVER_CONFIRM_WAIT_MS = 1500;
+
+// Every save writes the whole note, so only the newest one should drive the
+// indicator; when a backlog of offline saves confirms at once on reconnect,
+// an older one finishing must not overwrite the newest one's status.
+let latestSaveGeneration = 0;
+let saveIndicatorHideTimer = null;
+
+function setSaveIndicator(text, colorClass, autoHide) {
+  if (saveIndicatorHideTimer) {
+    clearTimeout(saveIndicatorHideTimer);
+    saveIndicatorHideTimer = null;
+  }
+  UI.saveIndicator.textContent = text;
+  UI.saveIndicator.classList.remove('text-slate-500', 'text-red-500', 'text-amber-600', 'opacity-0');
+  UI.saveIndicator.classList.add(colorClass, 'opacity-100');
+  if (autoHide) {
+    saveIndicatorHideTimer = setTimeout(() => {
+      UI.saveIndicator.classList.remove('opacity-100');
+      UI.saveIndicator.classList.add('opacity-0');
+    }, 2000);
+  }
+}
+
 function showSaveIndicator() {
-  UI.saveIndicator.textContent = 'Saved';
-  UI.saveIndicator.classList.remove('text-red-500', 'opacity-0');
-  UI.saveIndicator.classList.add('text-slate-500', 'opacity-100');
-  setTimeout(() => {
-    UI.saveIndicator.classList.remove('opacity-100');
-    UI.saveIndicator.classList.add('opacity-0');
-  }, 2000);
+  setSaveIndicator('Saved', 'text-slate-500', true);
   saveRetryDelay = SAVE_RETRY_BASE_DELAY;
   consecutiveSaveFailures = 0;
+}
+
+// Stays visible until the server confirms. Only claims "on device" when
+// Firestore's persistent (IndexedDB) cache is actually active - otherwise the
+// queued write only lives in memory and would be lost if the app is closed.
+function showSavedOnDevice() {
+  // Guarded so a cached older storage.js can't turn a successful save into a
+  // thrown error (which would land in the "Not saved" branch below).
+  if (typeof Storage.isPersistenceEnabled === 'function' && Storage.isPersistenceEnabled()) {
+    setSaveIndicator('Saved on device - will sync', 'text-slate-500', false);
+  } else {
+    setSaveIndicator('Offline - keep app open to sync', 'text-amber-600', false);
+  }
 }
 
 // Unlike showSaveIndicator, this does NOT auto-hide - a failed save must
@@ -435,11 +471,10 @@ function showSaveIndicator() {
 // failures so a genuinely stuck save (not just a brief network blip) reads
 // differently than a normal transient retry.
 function showSaveError() {
-  UI.saveIndicator.textContent = consecutiveSaveFailures >= 3
+  const text = consecutiveSaveFailures >= 3
     ? 'Not saved - check your connection'
     : 'Not saved - retrying...';
-  UI.saveIndicator.classList.remove('text-slate-500', 'opacity-0');
-  UI.saveIndicator.classList.add('text-red-500', 'opacity-100');
+  setSaveIndicator(text, 'text-red-500', false);
 }
 
 async function performSave() {
@@ -455,12 +490,22 @@ async function performSave() {
   }
 
   const data = getEditorData();
+  const generation = ++latestSaveGeneration;
 
   try {
-    const savedNote = await Storage.saveNote(data);
-    state.currentNoteId = savedNote.id;
-    showSaveIndicator();
+    const serverConfirmed = Storage.saveNote(data);
+    const firstResult = await Promise.race([
+      serverConfirmed.then(() => 'confirmed', () => 'failed'),
+      new Promise((resolve) => setTimeout(() => resolve('waiting'), navigator.onLine ? SERVER_CONFIRM_WAIT_MS : 0)),
+    ]);
+    if (firstResult === 'waiting' && generation === latestSaveGeneration) {
+      showSavedOnDevice();
+    }
+    await serverConfirmed;
+    if (generation === latestSaveGeneration) showSaveIndicator();
   } catch (e) {
+    // A newer save already carries everything this one had - no retry needed.
+    if (generation !== latestSaveGeneration) return;
     console.error('Autosave failed, will retry:', e);
     consecutiveSaveFailures++;
     showSaveError();
