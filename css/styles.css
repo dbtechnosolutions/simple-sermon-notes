@@ -5,6 +5,76 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Color palette as variables (see tailwind.config.js). Light values are
+   Tailwind's defaults, so light mode looks exactly as before. */
+:root {
+  color-scheme: light;
+  --c-white: 255 255 255;
+  --c-slate-50: 248 250 252;
+  --c-slate-100: 241 245 249;
+  --c-slate-200: 226 232 240;
+  --c-slate-300: 203 213 225;
+  --c-slate-400: 148 163 184;
+  --c-slate-500: 100 116 139;
+  --c-slate-600: 71 85 105;
+  --c-slate-700: 51 65 85;
+  --c-slate-800: 30 41 59;
+  --c-slate-900: 15 23 42;
+  --c-violet-50: 245 243 255;
+  --c-violet-200: 221 214 254;
+  --c-violet-300: 196 181 253;
+  --c-violet-800: 91 33 182;
+  --c-violet-900: 76 29 149;
+  --c-violet-950: 46 16 101;
+}
+
+/* Dark palette: surfaces go dark, text goes light. The brand violet is
+   brightened because the same shade serves both as text on dark surfaces
+   and as a button background behind white text. Applied from the phone's
+   system setting, or forced with data-theme on <html>. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --c-white: 30 41 59;
+    --c-slate-50: 15 23 42;
+    --c-slate-100: 39 52 73;
+    --c-slate-200: 51 65 85;
+    --c-slate-300: 71 85 105;
+    --c-slate-400: 148 163 184;
+    --c-slate-500: 180 192 207;
+    --c-slate-600: 203 213 225;
+    --c-slate-700: 214 222 232;
+    --c-slate-800: 226 232 240;
+    --c-slate-900: 241 245 249;
+    --c-violet-50: 46 16 101;
+    --c-violet-200: 91 33 182;
+    --c-violet-300: 109 40 217;
+    --c-violet-800: 124 58 237;
+    --c-violet-900: 139 92 246;
+    --c-violet-950: 124 58 237;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-white: 30 41 59;
+  --c-slate-50: 15 23 42;
+  --c-slate-100: 39 52 73;
+  --c-slate-200: 51 65 85;
+  --c-slate-300: 71 85 105;
+  --c-slate-400: 148 163 184;
+  --c-slate-500: 180 192 207;
+  --c-slate-600: 203 213 225;
+  --c-slate-700: 214 222 232;
+  --c-slate-800: 226 232 240;
+  --c-slate-900: 241 245 249;
+  --c-violet-50: 46 16 101;
+  --c-violet-200: 91 33 182;
+  --c-violet-300: 109 40 217;
+  --c-violet-800: 124 58 237;
+  --c-violet-900: 139 92 246;
+  --c-violet-950: 124 58 237;
+}
+
 /* Mobile browsers (iOS Safari, Android Chrome/Samsung Internet) can
    natively scroll the whole page to keep a focused contenteditable
    visible above the on-screen keyboard, regardless of h-screen/
@@ -74,7 +144,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .rich-text-editor:empty:before,
 #note-title:empty:before {
   content: attr(data-placeholder);
-  color: #94a3b8; /* slate-400 */
+  color: rgb(var(--c-slate-400));
   pointer-events: none;
   display: block;
   white-space: pre-wrap;
@@ -106,20 +176,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Scripture inserted inline from the toolbar's scripture button */
 .rich-text-editor .note-scripture {
-  color: #475569; /* slate-600 */
-  border-left: 3px solid #ddd6fe; /* violet-200 */
+  color: rgb(var(--c-slate-600));
+  border-left: 3px solid rgb(var(--c-violet-200));
   padding-left: 0.75rem;
   margin: 0.5rem 0;
 }
 .rich-text-editor .note-scripture sup {
-  color: #94a3b8; /* slate-400 */
+  color: rgb(var(--c-slate-400));
   font-size: 0.7em;
   margin-right: 0.15rem;
 }
 .rich-text-editor .note-scripture-ref {
   font-style: normal;
   font-weight: 500;
-  color: #4c1d95; /* violet-900 */
+  color: rgb(var(--c-violet-900));
   white-space: nowrap;
 }
 
@@ -128,14 +198,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .scripture-block {
   margin: 1rem 0;
   padding: 1rem;
-  background: #f1f5f9; /* slate-100 */
-  border-left: 3px solid #4c1d95; /* violet-900 */
+  background: rgb(var(--c-slate-100));
+  border-left: 3px solid rgb(var(--c-violet-900));
   border-radius: 0 0.5rem 0.5rem 0;
-  color: #334155; /* slate-700 */
+  color: rgb(var(--c-slate-700));
   font-size: 0.95rem;
 }
 .scripture-block .v-num {
-  color: #94a3b8; /* slate-400 */
+  color: rgb(var(--c-slate-400));
   font-size: 0.75em;
   margin-right: 0.25rem;
   user-select: none;

@@ -15,7 +15,8 @@
 
   <!-- Progressive Web App Settings -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#f8fafc">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Sermon Notes">
@@ -47,7 +48,7 @@
       <div id="bible-picker-grid" class="flex-1 overflow-y-auto p-4 grid gap-3 content-start w-full box-border"></div>
       <div class="p-4 border-t border-slate-200 bg-white hidden" id="bible-picker-footer">
         <button type="button"
-          class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
+          class="w-full bg-violet-900 hover:bg-violet-950 text-onbrand font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
           onclick="window.finalizeVerseSelection()">Done</button>
       </div>
     </div>
@@ -88,7 +89,7 @@
         <h2 class="text-3xl font-bold text-slate-900 mb-2">Sermon Notes</h2>
         <p class="text-slate-500 mb-8 max-w-[80%]">Securely sync your library exactly across your devices.</p>
         <button
-          class="bg-violet-900 text-white font-semibold rounded-full px-8 py-4 flex items-center gap-3 transition-transform active:scale-95 shadow-md shadow-violet-900/30"
+          class="bg-violet-900 text-onbrand font-semibold rounded-full px-8 py-4 flex items-center gap-3 transition-transform active:scale-95 shadow-md shadow-violet-900/30"
           onclick="window.signInAction()">
           <i class="ph-fill ph-google-logo text-xl"></i> Sign in with Google
         </button>
@@ -130,7 +131,7 @@
               </div>
               <div class="mt-2" id="add-scripture-wrapper">
                 <button type="button" id="btn-open-bible-picker"
-                  class="w-full bg-violet-900 hover:bg-violet-950 text-white font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
+                  class="w-full bg-violet-900 hover:bg-violet-950 text-onbrand font-semibold flex justify-center items-center gap-2 py-3 rounded-lg transition-colors active:scale-95"
                   onclick="window.openBiblePicker()">
                   <i class="ph-bold ph-book-open-text text-xl"></i> Add Scripture
                 </button>
@@ -190,7 +191,7 @@
                     placeholder="e.g. John 3:16 or rom 8:28" autocomplete="off" autocapitalize="words"
                     spellcheck="false" enterkeyhint="done">
                   <button type="button" id="scripture-insert-go"
-                    class="bg-violet-900 hover:bg-violet-950 text-white font-semibold rounded-lg px-4 py-2 transition-colors disabled:opacity-40"
+                    class="bg-violet-900 hover:bg-violet-950 text-onbrand font-semibold rounded-lg px-4 py-2 transition-colors disabled:opacity-40"
                     disabled>Insert</button>
                   <button type="button" id="scripture-insert-close" title="Close"
                     class="p-2 text-slate-400 hover:text-slate-900 transition-colors">
@@ -268,7 +269,7 @@
           <i class="ph-fill ph-notebook text-[4rem] text-slate-200 mb-4 drop-shadow-sm"></i>
           <p class="mb-6 font-medium text-slate-500">No notes yet.</p>
           <button
-            class="bg-violet-900 text-white font-semibold rounded-lg px-6 py-3 shadow-md hover:bg-violet-950 active:scale-95 transition-all"
+            class="bg-violet-900 text-onbrand font-semibold rounded-lg px-6 py-3 shadow-md hover:bg-violet-950 active:scale-95 transition-all"
             onclick="createNewNote()">Start Writing</button>
         </div>
       </section>
@@ -276,15 +277,23 @@
     </main>
   </div>
 
+  <!-- Toast: short bottom message with an optional action (e.g. "Note deleted - Undo") -->
+  <div id="toast" role="status" aria-live="polite"
+    class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[10002] bg-slate-900 text-white text-sm rounded-xl shadow-lg pl-4 pr-2 py-2 flex items-center gap-3 max-w-[90vw]">
+    <span id="toast-message"></span>
+    <button type="button" id="toast-action"
+      class="hidden font-semibold text-violet-300 hover:text-violet-200 px-3 py-2 rounded-lg"></button>
+  </div>
+
   <!-- Confirm Dialog (replaces native confirm() so it doesn't show the raw hosting domain) -->
-  <div id="confirm-modal" class="hidden fixed inset-0 z-[10001] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+  <div id="confirm-modal" class="hidden fixed inset-0 z-[10001] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
       <p id="confirm-modal-message" class="text-slate-800 text-base mb-6 leading-relaxed"></p>
       <div class="flex gap-3">
         <button type="button" id="confirm-modal-cancel"
           class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-lg transition-colors active:scale-95">Cancel</button>
         <button type="button" id="confirm-modal-confirm"
-          class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors active:scale-95">Delete</button>
+          class="flex-1 bg-red-600 hover:bg-red-700 text-onbrand font-semibold py-3 rounded-lg transition-colors active:scale-95">Delete</button>
       </div>
     </div>
   </div>

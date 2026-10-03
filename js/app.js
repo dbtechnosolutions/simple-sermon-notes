@@ -358,6 +358,21 @@ window.toggleScripture = function() {
 };
 
 window.goBackToList = function () {
+  // A note that was emptied out entirely would otherwise linger in the list
+  // as a blank "Untitled Sermon". Only on an explicit back - never on the app
+  // being backgrounded, where the user may be mid-edit and coming right back.
+  if (state.currentNoteId && isEditorEmpty()) {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = null;
+    }
+    const id = state.currentNoteId;
+    state.currentNoteId = null;
+    switchView('list');
+    Storage.deleteNote(id).catch(refreshListAfterDelete);
+    refreshListAfterDelete();
+    return;
+  }
   flushPendingSave();
   switchView('list');
 };
@@ -389,6 +404,70 @@ function showConfirmDialog(message) {
   });
 }
 
+// --- Toast (bottom message bar with an optional action) ---
+let toastTimer = null;
+
+function showToast(message, action) {
+  const toast = document.getElementById('toast');
+  const btn = document.getElementById('toast-action');
+  document.getElementById('toast-message').textContent = message;
+  if (action) {
+    btn.textContent = action.label;
+    btn.onclick = () => { hideToast(); action.onClick(); };
+    btn.classList.remove('hidden');
+  } else {
+    btn.onclick = null;
+    btn.classList.add('hidden');
+  }
+  toast.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, action ? 6000 : 4000);
+}
+
+function hideToast() {
+  clearTimeout(toastTimer);
+  document.getElementById('toast').classList.add('hidden');
+}
+
+// True when nothing meaningful has been entered (the date alone doesn't count).
+function isEditorEmpty() {
+  return !(UI.form.title.innerText || '').trim()
+    && !UI.form.speaker.value.trim()
+    && !state.mainScripture
+    && !(UI.form.content.textContent || '').trim()
+    && !UI.form.series.value.trim()
+    && !UI.form.youtube.value.trim();
+}
+
+function refreshListAfterDelete() {
+  if (state.activeView === 'list') renderNotesList();
+  updateDynamicAutocompletes();
+}
+
+// Deletes right away (without waiting on the server, which never confirms
+// while offline) and offers Undo. A server rejection restores the note and
+// says so instead of letting it silently reappear later.
+function deleteNoteWithUndo(id) {
+  const existing = Storage.getNoteById(id);
+  const copy = existing ? { ...existing } : null;
+
+  Storage.deleteNote(id).catch(() => {
+    refreshListAfterDelete();
+    showToast("Couldn't delete that note - it's been restored.");
+  });
+  refreshListAfterDelete();
+
+  showToast('Note deleted', copy ? {
+    label: 'Undo',
+    onClick: () => {
+      Storage.saveNote({ ...copy }).catch(() => {
+        showToast("Couldn't restore the note - check your connection.");
+      });
+      refreshListAfterDelete();
+    },
+  } : null);
+}
+
 window.deleteCurrentNote = async function () {
   if (!state.currentNoteId) {
     // Note hasn't even been auto-saved for the first time yet
@@ -396,16 +475,15 @@ window.deleteCurrentNote = async function () {
     return;
   }
 
-  if (await showConfirmDialog("Are you sure you want to completely delete this note? This cannot be undone.")) {
-    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-    try {
-      await Storage.deleteNote(state.currentNoteId);
-    } catch (e) {
-      alert("Failed to delete this note. Please check your connection and try again.");
-      return;
+  if (await showConfirmDialog('Delete this note?')) {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = null;
     }
+    const id = state.currentNoteId;
     state.currentNoteId = null;
     switchView('list');
+    deleteNoteWithUndo(id);
   }
 };
 
@@ -482,9 +560,7 @@ function showSaveError() {
 
 async function performSave() {
   // If absolutely nothing is entered beyond defaults, we don't save.
-  const isEssentiallyEmpty = !(UI.form.title.innerText || '').trim() && !UI.form.speaker.value && !state.mainScripture && !(UI.form.content.textContent || '').trim() && !UI.form.series.value;
-
-  if (isEssentiallyEmpty && !state.currentNoteId) return;
+  if (isEditorEmpty() && !state.currentNoteId) return;
 
   // Generate and set note ID synchronously before async operations
   // This prevents duplicates from rapid debounced saves while waiting for Firestore
@@ -593,18 +669,11 @@ function formatDate(dateStr) {
 
 window.deleteSermon = async function (e, id) {
   e.stopPropagation();
-  if (await showConfirmDialog('Are you sure you want to delete this sermon?')) {
-    try {
-      await Storage.deleteNote(id);
-    } catch (err) {
-      alert("Failed to delete this sermon. Please check your connection and try again.");
-      return;
-    }
+  if (await showConfirmDialog('Delete this sermon?')) {
     if (state.currentNoteId === id) {
       state.currentNoteId = null;
     }
-    renderNotesList();
-    if (typeof updateDynamicAutocompletes === 'function') updateDynamicAutocompletes();
+    deleteNoteWithUndo(id);
   }
 };
 
@@ -665,6 +734,22 @@ window.changeSortMode = function (e) {
   renderNotesList();
 };
 
+// Note bodies are stored as HTML; search should match only the words, not
+// tag/attribute names ("span", "strong", "class"...). DOMParser builds an
+// inert document - no scripts run and no images load - unlike assigning the
+// HTML to a live element's innerHTML.
+const searchTextCache = new Map();
+function noteBodyText(html) {
+  if (!html) return '';
+  let text = searchTextCache.get(html);
+  if (text === undefined) {
+    text = (new DOMParser().parseFromString(html, 'text/html').body.textContent || '').toLowerCase();
+    if (searchTextCache.size > 500) searchTextCache.clear();
+    searchTextCache.set(html, text);
+  }
+  return text;
+}
+
 function renderNotesList() {
   const notes = Storage.getNotes();
   UI.notesContainer.innerHTML = '';
@@ -676,7 +761,7 @@ function renderNotesList() {
       (n.speaker || '').toLowerCase().includes(term) ||
       (n.mainScripture || '').toLowerCase().includes(term) ||
       (n.series || '').toLowerCase().includes(term) ||
-      (n.content || '').toLowerCase().includes(term);
+      noteBodyText(n.content).includes(term);
   });
 
   if (filtered.length === 0) {
@@ -1043,10 +1128,10 @@ function renderVersesGrid(numVerses) {
     div.textContent = i;
     
     if (startVerse === i && !endVerse) {
-      div.classList.add('!bg-violet-900', '!text-white');
+      div.classList.add('!bg-violet-900', '!text-onbrand');
     } else if (startVerse && endVerse) {
       if (i === startVerse || i === endVerse) {
-        div.classList.add('!bg-violet-900', '!text-white');
+        div.classList.add('!bg-violet-900', '!text-onbrand');
       } else if (i > startVerse && i < endVerse) {
         div.classList.add('!bg-violet-900/20', '!text-violet-900');
       }

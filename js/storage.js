@@ -175,20 +175,23 @@ async function saveNote(note) {
   return note;
 }
 
-async function deleteNote(id) {
-  // Only remove from the local cache once the server delete actually
-  // succeeds - otherwise a failed delete looks identical to a successful
-  // one (note vanishes from the UI) but reappears next time notes are
-  // fetched, since it was never actually removed server-side.
-  try {
-    const docRef = db.collection('sermons').doc(id);
-    await docRef.delete();
-  } catch(e) {
-    console.error("Failed to delete from cloud", e);
-    throw e;
-  }
-
+// Removes the note from the local cache immediately and returns a promise
+// that settles when the SERVER confirms. Offline, Firestore queues the delete
+// on the device and the promise stays pending until reconnect, so callers
+// must not block the UI on it. If the server rejects the delete, the note is
+// put back in the cache and the error rethrown, so a failed delete can be
+// surfaced rather than the note silently reappearing on the next fetch.
+function deleteNote(id) {
+  const removed = localNotesCache.find(n => n.id === id);
   localNotesCache = localNotesCache.filter(n => n.id !== id);
+
+  return db.collection('sermons').doc(id).delete().catch((e) => {
+    console.error("Failed to delete from cloud", e);
+    if (removed && !localNotesCache.some(n => n.id === id)) {
+      localNotesCache.unshift(removed);
+    }
+    throw e;
+  });
 }
 
 // --- Auth Helpers (Exposed) ---
