@@ -90,6 +90,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   50% { transform: scale(1.05); opacity: 0.8; }
 }
 
+/* Lists in the note editor - Tailwind's base reset strips bullets/numbers
+   and indentation from ul/ol, so restore them for sermon-outline notes. */
+.rich-text-editor ul,
+.rich-text-editor ol {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+}
+.rich-text-editor ul { list-style: disc; }
+.rich-text-editor ol { list-style: decimal; }
+.rich-text-editor ul ul { list-style: circle; }
+.rich-text-editor ul ul ul { list-style: square; }
+.rich-text-editor ol ol { list-style: lower-alpha; }
+.rich-text-editor li { margin: 0.125rem 0; }
+
 /* Injected Scripture Block */
 /* Used dynamically by execCommand insertHTML during Bible Picker selection */
 .scripture-block {

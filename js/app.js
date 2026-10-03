@@ -67,18 +67,10 @@ window.formatText = function (command) {
 };
 
 function updateToolbarState() {
-  const commands = ['bold', 'italic', 'underline'];
-  const buttons = document.querySelectorAll('.toolbar-btn');
-  
-  if (buttons.length < 3) return; // safeguard if UI not loaded
-  
-  commands.forEach((command, index) => {
-    const isActive = document.queryCommandState(command);
-    if (isActive) {
-      buttons[index].classList.add('!text-violet-900', 'bg-violet-50');
-    } else {
-      buttons[index].classList.remove('!text-violet-900', 'bg-violet-50');
-    }
+  document.querySelectorAll('.toolbar-btn[data-command]').forEach((btn) => {
+    const isActive = document.queryCommandState(btn.dataset.command);
+    btn.classList.toggle('!text-violet-900', isActive);
+    btn.classList.toggle('bg-violet-50', isActive);
   });
 }
 
@@ -116,6 +108,8 @@ UI.form.content.addEventListener('paste', function (e) {
 // the placeholder depends on - leaving a blank box with no "Start typing..."
 // hint. Force it back to truly empty whenever there's no real text content.
 function normalizeEmptyContentEditable(el) {
+  // A freshly-started list has no text yet but must survive.
+  if (el.querySelector('li')) return;
   if ((el.textContent || '').trim() === '' && el.innerHTML !== '') {
     el.innerHTML = '';
   }
@@ -220,6 +214,12 @@ function switchView(viewName) {
 
     // Show editor buttons
     if (UI.topBar.deleteBtn) UI.topBar.deleteBtn.style.display = 'block';
+
+    // Toolbar highlights only refresh on selection changes inside the note,
+    // so clear any left over from the previous note until the user taps in.
+    document.querySelectorAll('.toolbar-btn').forEach((btn) => {
+      btn.classList.remove('!text-violet-900', 'bg-violet-50');
+    });
 
     if (typeof updateDynamicAutocompletes === 'function') updateDynamicAutocompletes();
   }

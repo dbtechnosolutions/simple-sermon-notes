@@ -182,18 +182,29 @@
               class="sticky bottom-0 w-full bg-white border-t border-slate-100 flex gap-2 p-2 z-10 justify-center">
               <button
                 class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
-                type="button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                type="button" data-command="bold" onclick="formatText('bold')" title="Bold (Ctrl+B)">
                 <i class="ph-bold ph-text-b text-xl"></i>
               </button>
               <button
                 class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
-                type="button" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                type="button" data-command="italic" onclick="formatText('italic')" title="Italic (Ctrl+I)">
                 <i class="ph-bold ph-text-italic text-xl"></i>
               </button>
               <button
                 class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
-                type="button" onclick="formatText('underline')" title="Underline (Ctrl+U)">
+                type="button" data-command="underline" onclick="formatText('underline')" title="Underline (Ctrl+U)">
                 <i class="ph-bold ph-text-underline text-xl"></i>
+              </button>
+              <div class="w-px bg-slate-200 my-2 mx-1"></div>
+              <button
+                class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
+                type="button" data-command="insertUnorderedList" onclick="formatText('insertUnorderedList')" title="Bulleted list">
+                <i class="ph-bold ph-list-bullets text-xl"></i>
+              </button>
+              <button
+                class="toolbar-btn p-3 text-slate-400 hover:text-violet-900 transition-colors rounded-lg flex items-center justify-center"
+                type="button" data-command="insertOrderedList" onclick="formatText('insertOrderedList')" title="Numbered list">
+                <i class="ph-bold ph-list-numbers text-xl"></i>
               </button>
             </div>
           </div>
